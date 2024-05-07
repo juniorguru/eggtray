@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from jg.eggtray.schema import parse
+from jg.eggtray.profile import parse
 
 
 @pytest.mark.parametrize(

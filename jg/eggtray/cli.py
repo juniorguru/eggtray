@@ -2,7 +2,7 @@ from pathlib import Path
 
 import click
 
-from jg.eggtray.schema import parse
+from jg.eggtray.profile import parse
 
 
 @click.command()
