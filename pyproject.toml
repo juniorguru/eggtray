@@ -1,0 +1,40 @@
+[tool.poetry]
+name = "jg.eggtray"
+version = "0.0"
+description = "Entry level candidates API"
+authors = ["Honza Javorek <honza@junior.guru>"]
+readme = "README.md"
+homepage = "https://junior.guru/"
+repository = "https://github.com/juniorguru/eggtray/"
+packages = [{ include = "jg" }]
+
+[tool.poetry.scripts]
+eggtray = "jg.eggtray.cli:main"
+
+[tool.poetry.dependencies]
+python = "~3.11"
+strictyaml = "1.7.3"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "8.1.1"
+pytest-ruff = "0.3.1"
+ruff = "0.3.1"
+
+[tool.pytest.ini_options]
+python_files = "test_*.py"
+testpaths = "tests"
+addopts = "--ff --ruff --ruff-format"
+
+[tool.ruff]
+target-version = "py311"
+
+[tool.ruff.lint]
+extend-select = ["I"]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+lines-after-imports = 2
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
