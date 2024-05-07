@@ -14,6 +14,7 @@ eggtray = "jg.eggtray.cli:main"
 [tool.poetry.dependencies]
 python = "~3.11"
 strictyaml = "1.7.3"
+click = "8.1.7"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "8.1.1"

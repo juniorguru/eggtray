@@ -1,9 +1,8 @@
 from pathlib import Path
 
 import pytest
-from strictyaml import load
 
-from jg.eggtray.schema import profile
+from jg.eggtray.schema import parse
 
 
 @pytest.mark.parametrize(
@@ -13,5 +12,5 @@ from jg.eggtray.schema import profile
         for path in (Path(__file__).parent.parent / "profiles").rglob("*.yml")
     ],
 )
-def test_schema(data: dict):
-    load(data, profile)
+def test_schema(data: str):
+    parse(data)
