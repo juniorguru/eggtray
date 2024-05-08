@@ -17,7 +17,7 @@ strictyaml = "1.7.3"
 click = "8.1.7"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "8.1.1"
+pytest = "8.2.0"
 pytest-ruff = "0.3.2"
 ruff = "0.3.1"
 
