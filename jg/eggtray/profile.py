@@ -1,12 +1,12 @@
 from collections import OrderedDict
 from typing import cast
 
-from strictyaml import Map, Str, load
+from strictyaml import Int, Map, load
 
 
 profile = Map(
     {
-        "name": Str(),
+        "discord_id": Int(),
     }
 )
 
