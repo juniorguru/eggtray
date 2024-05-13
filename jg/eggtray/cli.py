@@ -35,9 +35,12 @@ def load_profile(profile_path: Path) -> dict:
 
 
 async def check_profiles(profiles: list[dict], github_api_key: str | None = None):
-    for profile in profiles:
-        logger.info(f"Checking {profile['url']}")
-        summary = await check_profile_url(
+    tasks = [
+        check_profile_url(
             profile["url"], raise_on_error=True, github_api_key=github_api_key
         )
+        for profile in profiles
+    ]
+    for profile_checking in asyncio.as_completed(tasks):
+        summary = await profile_checking
         logger.info(summary)
