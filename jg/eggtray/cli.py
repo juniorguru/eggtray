@@ -28,7 +28,7 @@ def main(profiles_dir: Path, debug: bool, github_api_key: str | None = None):
 
 def load_profile(profile_path: Path) -> dict:
     profile = parse(profile_path.read_text())
-    username = profile_path.stem
+    username = profile_path.stem.lower()
     profile["username"] = username
     profile["url"] = f"https://github.com/{username}"
     return profile
