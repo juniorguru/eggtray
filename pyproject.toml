@@ -15,6 +15,7 @@ eggtray = "jg.eggtray.cli:main"
 python = "~3.11"
 strictyaml = "1.7.3"
 click = "8.1.7"
+"jg.hen" = { git = "https://github.com/juniorguru/hen.git" }
 
 [tool.poetry.group.dev.dependencies]
 pytest = "8.2.0"
@@ -35,6 +36,7 @@ extend-select = ["I"]
 [tool.ruff.lint.isort]
 combine-as-imports = true
 lines-after-imports = 2
+known-third-party = ["jg.hen"]
 
 [build-system]
 requires = ["poetry-core"]
