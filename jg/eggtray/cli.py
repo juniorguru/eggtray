@@ -31,7 +31,7 @@ def main(
 ):
     logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
 
-    if not overwrite and src_dir.exists():
+    if not overwrite and dest_dir.exists():
         logger.error(f"Destination directory {dest_dir} exists")
         raise click.Abort()
     shutil.rmtree(dest_dir, ignore_errors=True)
