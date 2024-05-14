@@ -1,2 +1,2 @@
-# eggtray
+# Eggtray 🥚
 Entry level candidates API
