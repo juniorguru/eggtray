@@ -30,6 +30,7 @@ def main(
     github_api_key: str | None = None,
 ):
     logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
+    logger.info(f"Using GitHub token: {'yes' if github_api_key else 'no'}")
 
     if not overwrite and dest_dir.exists():
         logger.error(f"Destination directory {dest_dir} exists")
