@@ -2,21 +2,21 @@ from pathlib import Path
 
 import pytest
 
-from jg.eggtray.profile import parse
+from jg.eggtray.cli import parse_document
 
 
 PROFILES_DIR = Path(__file__).parent.parent / "profiles"
 
 
 @pytest.mark.parametrize(
-    "data",
+    "username, data",
     [
-        pytest.param(path.read_text(), id=path.name)
+        pytest.param(path.stem, path.read_text(), id=path.name)
         for path in PROFILES_DIR.glob("*.yml")
     ],
 )
-def test_schema(data: str):
-    parse(data)
+def test_schema(username: str, data: str):
+    parse_document(username, data)
 
 
 def test_unique():
