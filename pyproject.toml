@@ -3,6 +3,7 @@ name = "jg.eggtray"
 version = "0.0"
 description = "Entry level candidates API"
 authors = ["Honza Javorek <honza@junior.guru>"]
+license = "AGPL-3.0-only"
 readme = "README.md"
 homepage = "https://junior.guru/"
 repository = "https://github.com/juniorguru/eggtray/"
