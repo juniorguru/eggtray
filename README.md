@@ -23,4 +23,4 @@ Open [juniorguru.github.io/eggtray/profiles.json](https://juniorguru.github.io/e
 The API has been created for the purpose of listing entry level candidates on [junior.guru/jobs](https://junior.guru/jobs/), but is open to anyone. If you use the API, [file an issue](https://github.com/juniorguru/eggtray/issues) and let's link your project from this document.
 
 > [!CAUTION]
-> As of now, the API is extremely **UNSTABLE**. There are no guarantees on schema of the response. Anything can change over night.
+> As of now, the API is extremely **UNSTABLE**. There are no guarantees on schema of the response. Anything can and **will** change over night.
