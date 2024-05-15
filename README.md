@@ -9,7 +9,7 @@ If you're looking for an entry level software engineering job, send a Pull Reque
 - The file must have the `.yml` extension
 - See existing files to learn about the format of the YAML document
 
-Once the PR gets merged, Eggtray uses [hen](https://github.com/juniorguru/hen) to inspect your GitHub profile. It merges the findings with data from the YAML file and creates a single data structure, which is then available in the API as your profile information.
+Once the PR gets accepted, Eggtray uses [hen](https://github.com/juniorguru/hen) to inspect your GitHub profile. It merges the findings with data from the YAML file and creates a single data structure, which is then available in the API as your profile information.
 
 If you want to change something in the YAML, send another PR. If you found a job (congratulations!) and now want to remove yourself from the API, send a PR removing your YAML file.
 
