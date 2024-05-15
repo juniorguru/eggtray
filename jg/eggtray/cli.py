@@ -3,21 +3,61 @@ import json
 import logging
 from collections import Counter
 from datetime import date, datetime
+from operator import attrgetter
 from pathlib import Path
-from typing import Any
+from typing import Any, Generator, Iterable, Self
 
 import click
+import yaml
 from jg.hen.core import Summary, check_profile_url
-
-from jg.eggtray.profile import parse
+from pydantic import BaseModel
 
 
 logger = logging.getLogger("jg.eggtray")
 
 
+class DocumentData(BaseModel):
+    username: str
+    url: str
+    discord_id: int
+
+
+class GitHubData(BaseModel):
+    username: str
+    outcomes_stats: dict[str, int]
+    insights: dict[str, Any]
+
+
+class Profile(BaseModel):
+    username: str
+    url: str
+    discord_id: int
+    outcomes_stats: dict[str, int]
+    insights: dict[str, Any]
+
+    @classmethod
+    def create(cls, document: DocumentData, github: GitHubData) -> Self:
+        usernames = [document.username, github.username]
+        if len(set(usernames)) != 1:
+            raise ValueError(f"Usernames do not match: {usernames!r}")
+        return cls(
+            username=document.username,
+            url=document.url,
+            discord_id=document.discord_id,
+            outcomes_stats=github.outcomes_stats,
+            insights=github.insights,
+        )
+
+
+class Response(BaseModel):
+    profiles: list[Profile]
+    count: int
+    schema: dict[str, Any]
+
+
 @click.command()
 @click.argument(
-    "profiles_dir",
+    "documents_dir",
     default="profiles",
     type=click.Path(exists=True, dir_okay=True, file_okay=False, path_type=Path),
 )
@@ -29,7 +69,7 @@ logger = logging.getLogger("jg.eggtray")
 @click.option("-d", "--debug", default=False, is_flag=True, help="Show debug logs.")
 @click.option("--github-api-key", envvar="GITHUB_API_KEY", help="GitHub API key.")
 def main(
-    profiles_dir: Path,
+    documents_dir: Path,
     output_path: Path,
     debug: bool,
     github_api_key: str | None = None,
@@ -39,58 +79,74 @@ def main(
     logger.info(f"Output path: {output_path}")
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    logger.info(f"Profiles directory: {profiles_dir}")
-    profiles_paths = list(profiles_dir.glob("*.yml"))
-    if not profiles_paths:
-        logger.error("No profiles found in the directory")
+    logger.info(f"Profile documents directory: {documents_dir}")
+    documents_paths = list(documents_dir.glob("*.yml"))
+    if not documents_paths:
+        logger.error("No profile documents found in the directory")
         raise click.Abort()
-    logger.info(f"Found {len(profiles_paths)} profiles")
-    profiles = [load_yaml(profile_path) for profile_path in profiles_paths]
-    profiles = asyncio.run(add_github_data(profiles, github_api_key=github_api_key))
+    logger.info(f"Found {len(documents_paths)} profile documents")
+    documents = list(map(load_document, documents_paths))
+
+    logger.info("Fetching corresponding GitHub data")
+    githubs = asyncio.run(fetch_github(documents, github_api_key=github_api_key))
+
+    logger.info("Creating profiles")
+    profiles = list(create_profiles(documents, githubs))
 
     logger.info(f"Writing {len(profiles)} profiles to {output_path}")
-    output_path.write_text(to_json(profiles))
+    response = Response(
+        profiles=profiles,
+        count=len(profiles),
+        schema=Profile.model_json_schema(),
+    )
+    output_path.write_text(response.model_dump_json())
 
 
-def load_yaml(profile_path: Path) -> dict:
-    profile = parse(profile_path.read_text())
-    username = profile_path.stem.lower()
-    profile["username"] = username
-    profile["url"] = f"https://github.com/{username}"
-    return profile
-
-
-async def add_github_data(
-    profiles: list[dict], github_api_key: str | None = None
-) -> list[dict]:
-    profiles_mapping = {profile["username"]: profile for profile in profiles}
+async def fetch_github(
+    documents: Iterable[DocumentData], github_api_key: str | None = None
+) -> list[GitHubData]:
+    documents_mapping = {document.username: document for document in documents}
     tasks = [
         check_profile_url(
-            profile["url"], raise_on_error=True, github_api_key=github_api_key
+            profile.url, raise_on_error=True, github_api_key=github_api_key
         )
-        for profile in profiles_mapping.values()
+        for profile in documents_mapping.values()
     ]
-    for profile_checking in asyncio.as_completed(tasks):
-        summary: Summary = await profile_checking
+    githubs = []
+    for github_checking in asyncio.as_completed(tasks):
+        summary: Summary = await github_checking
         if summary.error:
             raise summary.error
         logger.info(f"Processing {summary.username!r} done")
-
-        profile = profiles_mapping[summary.username]
-        profile["outcomes_stats"] = dict(
-            Counter([outcome.status for outcome in summary.outcomes])
+        githubs.append(
+            GitHubData(
+                username=summary.username,
+                outcomes_stats=dict(
+                    Counter([outcome.status for outcome in summary.outcomes])
+                ),
+                insights=summary.insights,
+            )
         )
-        profile["insights"] = summary.insights
-    return list(profiles_mapping.values())
+    return githubs
 
 
-def to_json(data: Any) -> str:
-    return json.dumps(data, indent=2, ensure_ascii=False, default=serialize)
+def create_profiles(
+    documents: Iterable[DocumentData], githubs: Iterable[GitHubData]
+) -> Generator[Profile, None, None]:
+    for document, github in zip(
+        sorted(documents, key=attrgetter("username")),
+        sorted(githubs, key=attrgetter("username")),
+    ):
+        yield Profile.create(document, github)
 
 
-def serialize(obj: Any) -> str:
-    if isinstance(obj, (datetime, date)):
-        return obj.isoformat()
-    raise TypeError(
-        f"Object of type {obj.__class__.__name__} is not JSON serializable."
+def load_document(profile_path: Path) -> DocumentData:
+    return parse_document(profile_path.stem.lower(), profile_path.read_text())
+
+
+def parse_document(username: str, yaml_text: str) -> DocumentData:
+    return DocumentData(
+        username=username,
+        url=f"https://github.com/{username}",
+        **yaml.safe_load(yaml_text),
     )

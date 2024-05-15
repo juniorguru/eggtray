@@ -3,7 +3,7 @@ Entry level candidates API
 
 ## Add yourself
 
-If you're looking for an entry level software engineering job, send a Pull Request adding a new YAML file to the [./profiles](./profiles) directory. Each YAML file in that directory represents a profile of a single person:
+If you're looking for an entry level software engineering job, send a Pull Request adding a new YAML file (RealPython has a [good intro to YAML](https://realpython.com/python-yaml/)) to the [./profiles](./profiles) directory. Each YAML file in that directory represents a profile of a single person:
 
 - Name of the file must be your GitHub username
 - The file must have the `.yml` extension

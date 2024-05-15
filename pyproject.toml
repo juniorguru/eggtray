@@ -14,9 +14,10 @@ eggtray = "jg.eggtray.cli:main"
 
 [tool.poetry.dependencies]
 python = "~3.11"
-strictyaml = "1.7.3"
 click = "8.1.7"
 "jg.hen" = { git = "https://github.com/juniorguru/hen.git" }
+pydantic = "2.7.1"
+pyyaml = "6.0.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "8.2.0"
