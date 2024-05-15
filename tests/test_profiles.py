@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from jg.eggtray.cli import parse_document
+from jg.eggtray.main import parse_document
 
 
 PROFILES_DIR = Path(__file__).parent.parent / "profiles"
