@@ -14,16 +14,10 @@ from pydantic import BaseModel
 logger = logging.getLogger("jg.eggtray")
 
 
-class DocumentData(BaseModel):
+class Document(BaseModel):
     username: str
     url: str
     discord_id: int
-
-
-class GitHubData(BaseModel):
-    username: str
-    outcomes_stats: dict[str, int]
-    insights: dict[str, Any]
 
 
 class Profile(BaseModel):
@@ -34,16 +28,18 @@ class Profile(BaseModel):
     insights: dict[str, Any]
 
     @classmethod
-    def create(cls, document: DocumentData, github: GitHubData) -> Self:
-        usernames = [document.username, github.username]
+    def create(cls, document: Document, summary: Summary) -> Self:
+        usernames = [document.username, summary.username]
         if len(set(usernames)) != 1:
             raise ValueError(f"Usernames do not match: {usernames!r}")
         return cls(
             username=document.username,
             url=document.url,
             discord_id=document.discord_id,
-            outcomes_stats=github.outcomes_stats,
-            insights=github.insights,
+            outcomes_stats=dict(
+                Counter([outcome.status for outcome in summary.outcomes])
+            ),
+            insights=summary.insights,
         )
 
 
@@ -85,11 +81,11 @@ def main(
     logger.info(f"Found {len(documents_paths)} profile documents")
     documents = list(map(load_document, documents_paths))
 
-    logger.info("Fetching corresponding GitHub data")
-    githubs = asyncio.run(fetch_github(documents, github_api_key=github_api_key))
+    logger.info("Analyzing GitHub profiles")
+    summaries = asyncio.run(fetch_summaries(documents, github_api_key=github_api_key))
 
     logger.info("Creating profiles")
-    profiles = list(create_profiles(documents, githubs))
+    profiles = list(create_profiles(documents, summaries))
 
     logger.info(f"Writing {len(profiles)} profiles to {output_path}")
     response = Response(
@@ -100,9 +96,9 @@ def main(
     output_path.write_text(response.model_dump_json())
 
 
-async def fetch_github(
-    documents: Iterable[DocumentData], github_api_key: str | None = None
-) -> list[GitHubData]:
+async def fetch_summaries(
+    documents: Iterable[Document], github_api_key: str | None = None
+) -> list[Summary]:
     documents_mapping = {document.username: document for document in documents}
     tasks = [
         check_profile_url(
@@ -110,40 +106,32 @@ async def fetch_github(
         )
         for profile in documents_mapping.values()
     ]
-    githubs = []
+    summaries = []
     for github_checking in asyncio.as_completed(tasks):
         summary: Summary = await github_checking
         if summary.error:
             raise summary.error
         logger.info(f"Processing {summary.username!r} done")
-        githubs.append(
-            GitHubData(
-                username=summary.username,
-                outcomes_stats=dict(
-                    Counter([outcome.status for outcome in summary.outcomes])
-                ),
-                insights=summary.insights,
-            )
-        )
-    return githubs
+        summaries.append(summary)
+    return summaries
 
 
 def create_profiles(
-    documents: Iterable[DocumentData], githubs: Iterable[GitHubData]
+    documents: Iterable[Document], summaries: Iterable[Summary]
 ) -> Generator[Profile, None, None]:
     for document, github in zip(
         sorted(documents, key=attrgetter("username")),
-        sorted(githubs, key=attrgetter("username")),
+        sorted(summaries, key=attrgetter("username")),
     ):
         yield Profile.create(document, github)
 
 
-def load_document(profile_path: Path) -> DocumentData:
+def load_document(profile_path: Path) -> Document:
     return parse_document(profile_path.stem.lower(), profile_path.read_text())
 
 
-def parse_document(username: str, yaml_text: str) -> DocumentData:
-    return DocumentData(
+def parse_document(username: str, yaml_text: str) -> Document:
+    return Document(
         username=username,
         url=f"https://github.com/{username}",
         **yaml.safe_load(yaml_text),
