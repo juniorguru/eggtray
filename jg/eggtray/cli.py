@@ -1,7 +1,6 @@
 import asyncio
 import json
 import logging
-import shutil
 from collections import Counter
 from datetime import date, datetime
 from pathlib import Path
@@ -17,28 +16,31 @@ logger = logging.getLogger("jg.eggtray")
 
 
 @click.command()
-@click.argument("src_dir", default="profiles", type=Path)
-@click.argument("dest_dir", default="output", type=Path)
+@click.argument(
+    "profiles_dir",
+    default="profiles",
+    type=click.Path(exists=True, dir_okay=True, file_okay=False, path_type=Path),
+)
+@click.argument(
+    "output_path",
+    default="output/profiles.json",
+    type=click.Path(exists=False, dir_okay=False, file_okay=True, path_type=Path),
+)
 @click.option("-d", "--debug", default=False, is_flag=True, help="Show debug logs.")
-@click.option("-o", "--overwrite/--no-overwrite", default=False)
 @click.option("--github-api-key", envvar="GITHUB_API_KEY", help="GitHub API key.")
 def main(
-    src_dir: Path,
-    dest_dir: Path,
+    profiles_dir: Path,
+    output_path: Path,
     debug: bool,
-    overwrite: bool,
     github_api_key: str | None = None,
 ):
     logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
     logger.info(f"Using GitHub token: {'yes' if github_api_key else 'no'}")
+    logger.info(f"Output path: {output_path}")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    if not overwrite and dest_dir.exists():
-        logger.error(f"Destination directory {dest_dir} exists")
-        raise click.Abort()
-    shutil.rmtree(dest_dir, ignore_errors=True)
-    dest_dir.mkdir(parents=True, exist_ok=True)
-
-    profiles_paths = list(src_dir.glob("*.yml"))
+    logger.info(f"Profiles directory: {profiles_dir}")
+    profiles_paths = list(profiles_dir.glob("*.yml"))
     if not profiles_paths:
         logger.error("No profiles found in the directory")
         raise click.Abort()
@@ -46,15 +48,8 @@ def main(
     profiles = [load_yaml(profile_path) for profile_path in profiles_paths]
     profiles = asyncio.run(add_github_data(profiles, github_api_key=github_api_key))
 
-    logger.info(f"Writing {len(profiles)} profiles")
-    for profile in profiles:
-        dest_path = dest_dir / "profiles" / f"{profile['username']}.json"
-        dest_path.parent.mkdir(parents=True, exist_ok=True)
-        dest_path.write_text(to_json(profile))
-        logger.info(f"Profile {profile['username']!r} saved to {dest_path}")
-    dest_path = dest_dir / "profiles.json"
-    dest_path.write_text(to_json([profile["username"] for profile in profiles]))
-    logger.info(f"Profiles index saved to {dest_path}")
+    logger.info(f"Writing {len(profiles)} profiles to {output_path}")
+    output_path.write_text(to_json(profiles))
 
 
 def load_yaml(profile_path: Path) -> dict:
