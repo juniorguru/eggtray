@@ -48,9 +48,9 @@ class Profile(BaseModel):
 
 
 class Response(BaseModel):
-    profiles: list[Profile]
     count: int
-    schema: dict[str, Any]
+    items: list[Profile]
+    item_schema: dict[str, Any]
 
 
 @click.command()
@@ -93,9 +93,9 @@ def main(
 
     logger.info(f"Writing {len(profiles)} profiles to {output_path}")
     response = Response(
-        profiles=profiles,
         count=len(profiles),
-        schema=Profile.model_json_schema(),
+        items=profiles,
+        item_schema=Profile.model_json_schema(),
     )
     output_path.write_text(response.model_dump_json())
 
