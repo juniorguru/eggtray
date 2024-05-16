@@ -2,9 +2,12 @@ discord_id: 1160890913900474439
 topics:
   - frontend
   - react
-schools:
-  - secondary
-  - university
+domains:
+  - muzikologie
+  - gastronomie
+  - management
 languages:
   - cs
   - en
+secondary_school: non_it
+university: non_it

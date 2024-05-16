@@ -3,8 +3,11 @@ topics:
   - frontend
   - react
   - typescript
-schools:
-  - secondary
+domains:
+  - pečovatelská služba
+  - veterina
 languages:
   - cs
   - en
+secondary_school: non_it
+university: null

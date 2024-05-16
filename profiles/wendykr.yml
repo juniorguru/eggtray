@@ -4,10 +4,12 @@ topics:
   - react
   - typescript
   - vue
-schools:
-  - secondary
-  - university
-  - it_university
+domains:
+  - správa e-shopu
+  - administrativa
+  - logistika a krizové řízení
 languages:
   - cs
   - en
+secondary_school: non_it
+university: it

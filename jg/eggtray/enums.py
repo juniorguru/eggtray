@@ -3,29 +3,16 @@ from enum import StrEnum, auto
 import pycountry
 
 
-Language = StrEnum(
-    "Language",
-    [
-        (code, code)
-        for code in filter(
-            None, [getattr(lang, "alpha_2", None) for lang in pycountry.languages]
-        )
-    ],
-)
+class Experience(StrEnum):
+    volunteer = auto()
+    intern = auto()
+    trainee = auto()
+    employee = auto()
 
 
 class School(StrEnum):
-    secondary_unfinished = auto()
-    secondary = auto()
-
-    university_unfinished = auto()
-    university = auto()
-
-    it_secondary_unfinished = auto()
-    it_secondary = auto()
-
-    it_university_unfinished = auto()
-    it_university = auto()
+    it = auto()
+    non_it = auto()
 
 
 class Topic(StrEnum):
@@ -51,3 +38,14 @@ class Topic(StrEnum):
     react = auto()
     vue = auto()
     angular = auto()
+
+
+Language = StrEnum(
+    "Language",
+    [
+        (code, code)
+        for code in filter(
+            None, [getattr(lang, "alpha_2", None) for lang in pycountry.languages]
+        )
+    ],
+)

@@ -2,8 +2,10 @@ discord_id: 980065246800658444
 topics:
   - mobile
   - swift
-schools:
-  - secondary
+domains:
+  - quality assurance
 languages:
   - cs
   - en
+secondary_school: non_it
+university: null

@@ -3,7 +3,7 @@ from typing import Any, Self
 from jg.hen.models import Outcome, Status, Summary
 from pydantic import BaseModel
 
-from jg.eggtray.enums import Language, School, Topic
+from jg.eggtray.enums import Experience, Language, School, Topic
 
 
 class Document(BaseModel):
@@ -15,8 +15,10 @@ class Document(BaseModel):
     email: str | None = None
     location: str | None = None
     topics: set[Topic]
-    schools: list[School]
-    experience_years: float = 0
+    domains: list[str] = []
+    experience: set[Experience] = set()
+    secondary_school: School | None
+    university: School | None
     languages: list[Language]  # type: ignore
 
     @classmethod
@@ -39,8 +41,10 @@ class Profile(BaseModel):
     github_url: str
     linkedin_url: str | None
     topics: set[Topic]
-    schools: list[School]
-    experience_years: float
+    domains: list[str]
+    experience: set[Experience]
+    secondary_school: School | None
+    university: School | None
     languages: list[Language]  # type: ignore
     outcomes: list[Outcome]
     is_ready: bool
@@ -63,8 +67,10 @@ class Profile(BaseModel):
             github_url=document.github_url,
             linkedin_url=summary.info.linkedin_url,
             topics=document.topics,
-            schools=document.schools,
-            experience_years=document.experience_years,
+            domains=document.domains,
+            experience=document.experience,
+            secondary_school=document.secondary_school,
+            university=document.university,
             languages=document.languages,
             outcomes=summary.outcomes,
             is_ready=all(
