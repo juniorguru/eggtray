@@ -8,3 +8,9 @@ schools:
   - secondary
   - university
   - it_university
+languages:
+  - cs
+  - en
+courses:
+  - czechitas
+  - reactgirls

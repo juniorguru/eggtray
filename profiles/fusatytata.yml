@@ -5,3 +5,8 @@ topics:
 schools:
   - secondary
   - university
+languages:
+  - cs
+  - en
+courses:
+  - coreskill
