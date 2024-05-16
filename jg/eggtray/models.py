@@ -47,7 +47,7 @@ class Profile(BaseModel):
     secondary_school: School | None
     university: School | None
     languages: list[Language]  # type: ignore
-    outcomes: list[Outcome]
+    issues: list[Outcome]
     projects: list[ProjectInfo]
     is_ready: bool
 
@@ -60,6 +60,11 @@ class Profile(BaseModel):
         username = usernames[0]
 
         # Prepare properties
+        issues = [
+            outcome
+            for outcome in summary.outcomes
+            if outcome.status in [Status.WARNING, Status.ERROR]
+        ]
         projects = sorted(
             [
                 project
@@ -87,7 +92,7 @@ class Profile(BaseModel):
             secondary_school=document.secondary_school,
             university=document.university,
             languages=document.languages,
-            outcomes=summary.outcomes,
+            issues=issues,
             projects=projects,
             is_ready=is_ready,
         )
