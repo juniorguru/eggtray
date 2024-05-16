@@ -235,7 +235,7 @@ pydantic = "2.7.1"
 type = "git"
 url = "https://github.com/juniorguru/hen.git"
 reference = "HEAD"
-resolved_reference = "f31b5b6ecb8b5323e196bb15da7ea2391edd9984"
+resolved_reference = "485c57a23c730cd0a662853eadea5e6e57db4280"
 
 [[package]]
 name = "lxml"
@@ -759,4 +759,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.11"
-content-hash = "e418c342543f4f514e26f479483df91423c268e2d0f9f5a5c88ed02339d39c0b"
+content-hash = "f7ad8991bcb1e2e9701821740d2360ed9333ee4150e9de7288e758e96b6ee706"
