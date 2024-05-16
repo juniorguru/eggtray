@@ -24,3 +24,6 @@ The API has been created for the purpose of listing entry level candidates on [j
 
 > [!CAUTION]
 > As of now, the API is extremely **UNSTABLE**. There are no guarantees on schema of the response. Anything can and **will** change over night.
+
+## License
+[AGPL-3.0-only](LICENSE), copyright (c) 2024 Jan Javorek, and contributors.
