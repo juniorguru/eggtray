@@ -3,7 +3,7 @@ from typing import Any, Self
 from jg.hen.models import Outcome, Status, Summary
 from pydantic import BaseModel
 
-from jg.eggtray.enums import CourseProvider, Language, School, Topic
+from jg.eggtray.enums import Language, School, Topic
 
 
 class Document(BaseModel):
@@ -18,7 +18,6 @@ class Document(BaseModel):
     schools: list[School]
     experience_years: float = 0
     languages: list[Language]  # type: ignore
-    courses: list[CourseProvider] = []
 
     @classmethod
     def create(cls, username: str, yaml_data: dict[str, Any]) -> Self:
@@ -43,7 +42,6 @@ class Profile(BaseModel):
     schools: list[School]
     experience_years: float
     languages: list[Language]  # type: ignore
-    courses: list[CourseProvider]
     outcomes: list[Outcome]
     is_ready: bool
 
@@ -68,7 +66,6 @@ class Profile(BaseModel):
             schools=document.schools,
             experience_years=document.experience_years,
             languages=document.languages,
-            courses=document.courses,
             outcomes=summary.outcomes,
             is_ready=all(
                 outcome.status != Status.ERROR for outcome in summary.outcomes
