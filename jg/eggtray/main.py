@@ -1,13 +1,12 @@
 import asyncio
 import logging
-from collections import Counter
 from operator import attrgetter
 from pathlib import Path
 from typing import Any, Generator, Iterable, Self
 
 import click
 import yaml
-from jg.hen.core import Summary, check_profile_url
+from jg.hen.core import Outcome, Status, Summary, check_profile_url
 from pydantic import BaseModel
 
 
@@ -16,30 +15,44 @@ logger = logging.getLogger("jg.eggtray")
 
 class Document(BaseModel):
     username: str
-    url: str
-    discord_id: int
+    github_url: str
+    discord_id: int | None = None
+    name: str | None = None
+    bio: str | None = None
+    location: str | None = None
 
 
 class Profile(BaseModel):
-    username: str
-    url: str
-    discord_id: int
-    outcomes_stats: dict[str, int]
-    insights: dict[str, Any]
+    name: str | None = None
+    bio: str | None = None
+    avatar_url: str
+    location: str | None = None
+    discord_id: int | None = None
+    github_username: str
+    github_url: str
+    linkedin_url: str | None = None
+    outcomes: list[Outcome]
+    is_ready: bool
 
     @classmethod
     def create(cls, document: Document, summary: Summary) -> Self:
         usernames = [document.username, summary.username]
         if len(set(usernames)) != 1:
             raise ValueError(f"Usernames do not match: {usernames!r}")
+        username = usernames[0]
+
         return cls(
-            username=document.username,
-            url=document.url,
+            name=document.name or summary.insights["name"] or username,
+            avatar_url=summary.insights["avatar_url"],
+            location=document.location or summary.insights["location"],
             discord_id=document.discord_id,
-            outcomes_stats=dict(
-                Counter([outcome.status for outcome in summary.outcomes])
+            github_username=username,
+            github_url=document.github_url,
+            linkedin_url=summary.insights["linkedin_url"],
+            outcomes=summary.outcomes,
+            is_ready=all(
+                outcome.status != Status.ERROR for outcome in summary.outcomes
             ),
-            insights=summary.insights,
         )
 
 
@@ -93,7 +106,7 @@ def main(
         items=profiles,
         item_schema=Profile.model_json_schema(),
     )
-    output_path.write_text(response.model_dump_json())
+    output_path.write_text(response.model_dump_json(indent=2))
 
 
 async def fetch_summaries(
@@ -102,9 +115,9 @@ async def fetch_summaries(
     documents_mapping = {document.username: document for document in documents}
     tasks = [
         check_profile_url(
-            profile.url, raise_on_error=True, github_api_key=github_api_key
+            document.github_url, raise_on_error=True, github_api_key=github_api_key
         )
-        for profile in documents_mapping.values()
+        for document in documents_mapping.values()
     ]
     summaries = []
     for github_checking in asyncio.as_completed(tasks):
@@ -133,6 +146,6 @@ def load_document(profile_path: Path) -> Document:
 def parse_document(username: str, yaml_text: str) -> Document:
     return Document(
         username=username,
-        url=f"https://github.com/{username}",
+        github_url=f"https://github.com/{username}",
         **yaml.safe_load(yaml_text),
     )
