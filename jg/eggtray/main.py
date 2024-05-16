@@ -2,72 +2,17 @@ import asyncio
 import logging
 from operator import attrgetter
 from pathlib import Path
-from typing import Any, Generator, Iterable, Self
+from typing import Generator, Iterable
 
 import click
 import yaml
 from jg.hen.core import check_profile_url
-from jg.hen.models import Outcome, Status, Summary
-from pydantic import BaseModel
+from jg.hen.models import Summary
 
-from jg.eggtray.topics import Topic
+from jg.eggtray.models import Document, Profile, Response
 
 
 logger = logging.getLogger("jg.eggtray")
-
-
-class Document(BaseModel):
-    username: str
-    github_url: str
-    discord_id: int | None = None
-    name: str | None = None
-    bio: str | None = None
-    email: str | None = None
-    location: str | None = None
-    topics: set[Topic] = set()
-
-
-class Profile(BaseModel):
-    name: str | None
-    bio: str | None
-    email: str | None
-    avatar_url: str
-    location: str | None
-    discord_id: int | None
-    github_username: str
-    github_url: str
-    linkedin_url: str | None
-    outcomes: list[Outcome]
-    is_ready: bool
-
-    @classmethod
-    def create(cls, document: Document, summary: Summary) -> Self:
-        usernames = [document.username, summary.username]
-        if len(set(usernames)) != 1:
-            raise ValueError(f"Usernames do not match: {usernames!r}")
-        username = usernames[0]
-
-        return cls(
-            name=document.name or summary.info.name or username,
-            bio=document.bio or summary.info.bio,
-            email=document.email or summary.info.email,
-            avatar_url=summary.info.avatar_url,
-            location=document.location or summary.info.location,
-            discord_id=document.discord_id,
-            github_username=username,
-            github_url=document.github_url,
-            linkedin_url=summary.info.linkedin_url,
-            outcomes=summary.outcomes,
-            is_ready=all(
-                outcome.status != Status.ERROR for outcome in summary.outcomes
-            ),
-        )
-
-
-class Response(BaseModel):
-    count: int
-    items: list[Profile]
-    item_schema: dict[str, Any]
 
 
 @click.command()
@@ -109,12 +54,15 @@ def main(
     profiles = list(create_profiles(documents, summaries))
 
     logger.info(f"Writing {len(profiles)} profiles to {output_path}")
-    response = Response(
-        count=len(profiles),
-        items=profiles,
-        item_schema=Profile.model_json_schema(),
-    )
+    response = Response.create(profiles)
     output_path.write_text(response.model_dump_json(indent=2))
+
+
+def load_document(profile_path: Path) -> Document:
+    return Document.create(
+        profile_path.stem.lower(),
+        yaml.safe_load(profile_path.read_text()),
+    )
 
 
 async def fetch_summaries(
@@ -145,15 +93,3 @@ def create_profiles(
         sorted(summaries, key=attrgetter("username")),
     ):
         yield Profile.create(document, github)
-
-
-def load_document(profile_path: Path) -> Document:
-    return parse_document(profile_path.stem.lower(), profile_path.read_text())
-
-
-def parse_document(username: str, yaml_text: str) -> Document:
-    return Document(
-        username=username,
-        github_url=f"https://github.com/{username}",
-        **yaml.safe_load(yaml_text),
-    )

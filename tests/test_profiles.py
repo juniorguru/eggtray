@@ -1,8 +1,10 @@
 from pathlib import Path
+from typing import Any
 
 import pytest
+import yaml
 
-from jg.eggtray.main import parse_document
+from jg.eggtray.models import Document
 
 
 PROFILES_DIR = Path(__file__).parent.parent / "profiles"
@@ -11,12 +13,12 @@ PROFILES_DIR = Path(__file__).parent.parent / "profiles"
 @pytest.mark.parametrize(
     "username, data",
     [
-        pytest.param(path.stem, path.read_text(), id=path.name)
+        pytest.param(path.stem, yaml.safe_load(path.read_text()), id=path.name)
         for path in PROFILES_DIR.glob("*.yml")
     ],
 )
-def test_schema(username: str, data: str):
-    parse_document(username, data)
+def test_schema(username: str, data: dict[str, Any]):
+    Document.create(username, data)
 
 
 def test_unique():
