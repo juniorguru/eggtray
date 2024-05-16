@@ -235,7 +235,7 @@ pydantic = "2.7.1"
 type = "git"
 url = "https://github.com/juniorguru/hen.git"
 reference = "HEAD"
-resolved_reference = "72b52dd4a0c1338b259aa9dae745c528a3f683db"
+resolved_reference = "0d26fdd66c5bcd3ac1d21ebf5c3f8b090aadfb2b"
 
 [[package]]
 name = "lxml"

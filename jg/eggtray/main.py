@@ -10,6 +10,8 @@ from jg.hen.core import check_profile_url
 from jg.hen.models import Outcome, Status, Summary
 from pydantic import BaseModel
 
+from jg.eggtray.topics import Topic
+
 
 logger = logging.getLogger("jg.eggtray")
 
@@ -21,6 +23,7 @@ class Document(BaseModel):
     name: str | None = None
     bio: str | None = None
     location: str | None = None
+    topics: set[Topic] = set()
 
 
 class Profile(BaseModel):
