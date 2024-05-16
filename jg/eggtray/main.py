@@ -22,19 +22,21 @@ class Document(BaseModel):
     discord_id: int | None = None
     name: str | None = None
     bio: str | None = None
+    email: str | None = None
     location: str | None = None
     topics: set[Topic] = set()
 
 
 class Profile(BaseModel):
-    name: str | None = None
-    bio: str | None = None
+    name: str | None
+    bio: str | None
+    email: str | None
     avatar_url: str
-    location: str | None = None
-    discord_id: int | None = None
+    location: str | None
+    discord_id: int | None
     github_username: str
     github_url: str
-    linkedin_url: str | None = None
+    linkedin_url: str | None
     outcomes: list[Outcome]
     is_ready: bool
 
@@ -48,6 +50,7 @@ class Profile(BaseModel):
         return cls(
             name=document.name or summary.info.name or username,
             bio=document.bio or summary.info.bio,
+            email=document.email or summary.info.email,
             avatar_url=summary.info.avatar_url,
             location=document.location or summary.info.location,
             discord_id=document.discord_id,
