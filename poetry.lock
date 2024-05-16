@@ -229,12 +229,13 @@ githubkit = "0.11.4"
 httpx = "0.27.0"
 lxml = "5.2.2"
 pillow = "10.3.0"
+pydantic = "2.7.1"
 
 [package.source]
 type = "git"
 url = "https://github.com/juniorguru/hen.git"
 reference = "HEAD"
-resolved_reference = "9952813c9f28b9ba43e5a143c765802836dde0a6"
+resolved_reference = "72b52dd4a0c1338b259aa9dae745c528a3f683db"
 
 [[package]]
 name = "lxml"

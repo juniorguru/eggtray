@@ -6,7 +6,8 @@ from typing import Any, Generator, Iterable, Self
 
 import click
 import yaml
-from jg.hen.core import Outcome, Status, Summary, check_profile_url
+from jg.hen.core import check_profile_url
+from jg.hen.models import Outcome, Status, Summary
 from pydantic import BaseModel
 
 
@@ -42,13 +43,14 @@ class Profile(BaseModel):
         username = usernames[0]
 
         return cls(
-            name=document.name or summary.insights["name"] or username,
-            avatar_url=summary.insights["avatar_url"],
-            location=document.location or summary.insights["location"],
+            name=document.name or summary.info.name or username,
+            bio=document.bio or summary.info.bio,
+            avatar_url=summary.info.avatar_url,
+            location=document.location or summary.info.location,
             discord_id=document.discord_id,
             github_username=username,
             github_url=document.github_url,
-            linkedin_url=summary.insights["linkedin_url"],
+            linkedin_url=summary.info.linkedin_url,
             outcomes=summary.outcomes,
             is_ready=all(
                 outcome.status != Status.ERROR for outcome in summary.outcomes
