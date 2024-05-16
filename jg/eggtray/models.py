@@ -1,6 +1,7 @@
+from operator import attrgetter
 from typing import Any, Self
 
-from jg.hen.models import Outcome, Status, Summary
+from jg.hen.models import Outcome, ProjectInfo, Status, Summary
 from pydantic import BaseModel
 
 from jg.eggtray.enums import Experience, Language, School, Topic
@@ -47,15 +48,29 @@ class Profile(BaseModel):
     university: School | None
     languages: list[Language]  # type: ignore
     outcomes: list[Outcome]
+    projects: list[ProjectInfo]
     is_ready: bool
 
     @classmethod
     def create(cls, document: Document, summary: Summary) -> Self:
+        # Ensure that the usernames match
         usernames = [document.username, summary.username]
         if len(set(usernames)) != 1:
             raise ValueError(f"Usernames do not match: {usernames!r}")
         username = usernames[0]
 
+        # Prepare properties
+        projects = sorted(
+            [
+                project
+                for project in summary.info.projects
+                if project.priority in [0, 1]
+            ],
+            key=attrgetter("priority"),
+        )
+        is_ready = all(outcome.status != Status.ERROR for outcome in summary.outcomes)
+
+        # Construct the profile, pay attention to priority of sources
         return cls(
             name=document.name or summary.info.name or username,
             bio=document.bio or summary.info.bio,
@@ -73,9 +88,8 @@ class Profile(BaseModel):
             university=document.university,
             languages=document.languages,
             outcomes=summary.outcomes,
-            is_ready=all(
-                outcome.status != Status.ERROR for outcome in summary.outcomes
-            ),
+            projects=projects,
+            is_ready=is_ready,
         )
 
 
