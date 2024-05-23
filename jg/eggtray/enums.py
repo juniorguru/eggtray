@@ -12,6 +12,7 @@ class Experience(StrEnum):
 
 class School(StrEnum):
     it = auto()
+    math = auto()
     non_it = auto()
 
 
