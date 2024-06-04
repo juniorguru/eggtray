@@ -23,7 +23,7 @@ pycountry = "24.6.1"
 [tool.poetry.group.dev.dependencies]
 pytest = "8.2.1"
 pytest-ruff = "0.3.2"
-ruff = "0.4.6"
+ruff = "0.4.7"
 
 [tool.pytest.ini_options]
 python_files = "test_*.py"
