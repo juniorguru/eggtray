@@ -16,7 +16,7 @@ eggtray = "jg.eggtray.main:main"
 python = "~3.11"
 click = "8.1.7"
 "jg.hen" = { git = "https://github.com/juniorguru/hen.git" }
-pydantic = "2.7.1"
+pydantic = "2.8.2"
 pyyaml = "6.0.1"
 pycountry = "24.6.1"
 
