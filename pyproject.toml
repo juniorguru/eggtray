@@ -13,10 +13,10 @@ packages = [{ include = "jg" }]
 eggtray = "jg.eggtray.main:main"
 
 [tool.poetry.dependencies]
-python = "~3.11"
+python = "~3.12"
 click = "8.1.7"
 "jg.hen" = { git = "https://github.com/juniorguru/hen.git" }
-pydantic = "2.8.2"
+pydantic = "2.9.2"
 pyyaml = "6.0.2"
 pycountry = "24.6.1"
 
