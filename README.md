@@ -20,7 +20,7 @@ If you want to change something in the YAML, send another PR. If you found a job
 
 Open [juniorguru.github.io/eggtray/profiles.json](https://juniorguru.github.io/eggtray/profiles.json). That's it! As of now, there are no limitations on what you can do with the API. You can use the data for any purpose, even commercial, and there is no rate limiting.
 
-The API has been created for the purpose of listing entry level candidates on [junior.guru/jobs](https://junior.guru/jobs/), but is open to anyone. If you use the API, [file an issue](https://github.com/juniorguru/eggtray/issues) and let's link your project from this document.
+The API has been created for the purpose of listing entry level candidates on [junior.guru/jobs](https://junior.guru/candidates/), but is open to anyone. If you use the API, [file an issue](https://github.com/juniorguru/eggtray/issues) and let's link your project from this document.
 
 > [!CAUTION]
 > As of now, the API is extremely **UNSTABLE**. There are no guarantees on schema of the response. Anything can and **will** change over night.
