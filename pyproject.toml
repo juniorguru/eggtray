@@ -14,9 +14,9 @@ eggtray = "jg.eggtray.main:main"
 
 [tool.poetry.dependencies]
 python = "~3.12"
-click = "8.1.7"
+click = "8.1.8"
 "jg.hen" = { git = "https://github.com/juniorguru/hen.git" }
-pydantic = "2.9.2"
+pydantic = "2.10.4"
 pyyaml = "6.0.2"
 pycountry = "24.6.1"
 
