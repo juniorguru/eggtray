@@ -2,7 +2,7 @@ name: test
 
 on:
   issues:
-    types: [opened]
+    types: [opened, edited]
 
 jobs:
   test:

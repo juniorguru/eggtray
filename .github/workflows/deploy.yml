@@ -43,7 +43,7 @@ jobs:
         run: poetry run pytest
 
       - name: Build
-        run: poetry run eggtray
+        run: poetry run eggtray build
         env:
           GITHUB_API_KEY: ${{ secrets.GITHUB_TOKEN }}
 

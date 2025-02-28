@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 from operator import attrgetter
 from pathlib import Path
@@ -15,7 +16,15 @@ from jg.eggtray.models import Document, Profile, Response
 logger = logging.getLogger("jg.eggtray")
 
 
-@click.command()
+@click.group()
+@click.option("-d", "--debug", default=False, is_flag=True, help="Show debug logs.")
+def main(
+    debug: bool,
+):
+    logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
+
+
+@main.command()
 @click.argument(
     "documents_dir",
     default="profiles",
@@ -26,15 +35,12 @@ logger = logging.getLogger("jg.eggtray")
     default="output/profiles.json",
     type=click.Path(exists=False, dir_okay=False, file_okay=True, path_type=Path),
 )
-@click.option("-d", "--debug", default=False, is_flag=True, help="Show debug logs.")
 @click.option("--github-api-key", envvar="GITHUB_API_KEY", help="GitHub API key.")
-def main(
+def build(
     documents_dir: Path,
     output_path: Path,
-    debug: bool,
     github_api_key: str | None = None,
 ):
-    logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
     logger.info(f"Using GitHub token: {'yes' if github_api_key else 'no'}")
     logger.info(f"Output path: {output_path}")
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -93,3 +99,14 @@ def create_profiles(
         sorted(summaries, key=attrgetter("username")),
     ):
         yield Profile.create(document, github)
+
+
+@main.command()
+@click.argument(
+    "payload_path",
+    envvar="GITHUB_EVENT_PATH",
+    type=click.Path(exists=True, dir_okay=False, file_okay=True, path_type=Path),
+)
+@click.option("--github-api-key", envvar="GITHUB_API_KEY", help="GitHub API key.")
+def issue(payload_path: Path, github_api_key: str | None = None):
+    print(json.loads(payload_path.read_text()))
