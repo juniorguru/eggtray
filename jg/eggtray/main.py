@@ -183,10 +183,23 @@ async def fetch_username_from_issue(
 async def post_summary(
     owner_repo: str, issue_number: int, summary: Summary, github: GitHub
 ) -> None:
+    owner, repo = owner_repo.split("/")
+    title = f"Profile check: {summary.username}"
+
+    logger.debug(f"Checking title of issue #{issue_number}")
+    response = await github.rest.issues.async_get(
+        owner=owner, repo=repo, issue_number=issue_number
+    )
+    issue = response.parsed_data
+    if issue.title != title:
+        logger.debug(f"Updating title of issue #{issue_number}")
+        await github.rest.issues.async_update(
+            owner=owner, repo=repo, issue_number=issue_number, title=title
+        )
+
     logger.debug(
         f"Posting summary to issue #{issue_number}:\n{summary.model_dump_json(indent=2)}"
     )
-    owner, repo = owner_repo.split("/")
     await github.rest.issues.async_create_comment(
         owner=owner,
         repo=repo,
