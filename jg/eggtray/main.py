@@ -102,12 +102,23 @@ def create_profiles(
 
 
 @main.command()
-@click.argument(
-    "payload_path",
+@click.argument("issue_number", type=int, required=False)
+@click.option(
+    "--event",
+    "event_path",
     envvar="GITHUB_EVENT_PATH",
     type=click.Path(exists=True, dir_okay=False, file_okay=True, path_type=Path),
 )
 @click.option("--github-api-key", envvar="GITHUB_API_KEY", help="GitHub API key.")
-def issue(payload_path: Path, github_api_key: str | None = None):
-    print(payload_path.read_text())
-    # print(json.loads(payload_path.read_text()))
+def issue(
+    issue_number: int, event_path: Path | None, github_api_key: str | None = None
+):
+    logger.info(f"Using GitHub token: {'yes' if github_api_key else 'no'}")
+    logger.info(f"Event payload path: {event_path}")
+    if issue_number is None:
+        if event_path is None:
+            logger.error("Issue number or event payload path is required")
+            raise click.Abort()
+        payload = json.loads(event_path.read_text())
+        issue_number = payload["issue"]["number"]
+    logger.info(f"Processing issue #{issue_number}")
