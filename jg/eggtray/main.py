@@ -110,19 +110,20 @@ def create_profiles(
     "--repo", "owner_repo", default="juniorguru/eggtray", help="GitHub repository."
 )
 @click.option(
+    "--github-api-key", envvar="GITHUB_API_KEY", help="GitHub API key.", required=True
+)
+@click.option(
     "--event",
     "event_path",
     envvar="GITHUB_EVENT_PATH",
     type=click.Path(exists=True, dir_okay=False, file_okay=True, path_type=Path),
 )
-@click.option("--github-api-key", envvar="GITHUB_API_KEY", help="GitHub API key.")
 def issue(
     issue_number: int,
     owner_repo: str,
+    github_api_key: str,
     event_path: Path | None = None,
-    github_api_key: str | None = None,
 ):
-    logger.info(f"Using GitHub token: {'yes' if github_api_key else 'no'}")
     logger.info(f"Event payload path: {event_path}")
     if issue_number is None:
         if event_path is None:
@@ -134,19 +135,17 @@ def issue(
     asyncio.run(process_issue(owner_repo, issue_number, github_api_key))
 
 
-async def process_issue(
-    owner_repo: str, issue_number: int, github_api_key: str | None = None
-):
+async def process_issue(owner_repo: str, issue_number: int, api_key: str):
     logger.info(f"Fetching issue #{issue_number}")
     username = await fetch_username_from_issue(
-        owner_repo, issue_number, github_api_key=github_api_key
+        owner_repo, issue_number, github_api_key=api_key
     )
     if username:
+        title = f"Profile check: {username}"
+        await update_title(owner_repo, issue_number, title, github_api_key=api_key)
         profile_url = f"https://github.com/{username}"
         logger.info(f"Checking profile: {profile_url}")
-        summary: Summary = await check_profile_url(
-            profile_url, github_api_key=github_api_key
-        )
+        summary: Summary = await check_profile_url(profile_url, github_api_key=api_key)
         logger.info("Posting summary")
         await post_summary(owner_repo, issue_number, summary)
 
@@ -180,23 +179,27 @@ async def fetch_username_from_issue(
 
 
 @with_github
-async def post_summary(
-    owner_repo: str, issue_number: int, summary: Summary, github: GitHub
-) -> None:
+async def update_title(owner_repo: str, issue_number: int, title: str, github: GitHub):
     owner, repo = owner_repo.split("/")
-    title = f"Profile check: {summary.username}"
-
     logger.debug(f"Checking title of issue #{issue_number}")
     response = await github.rest.issues.async_get(
         owner=owner, repo=repo, issue_number=issue_number
     )
     issue = response.parsed_data
     if issue.title != title:
-        logger.debug(f"Updating title of issue #{issue_number}")
+        logger.debug(
+            f"Updating title of issue #{issue_number} from {issue.title!r} to {title!r}"
+        )
         await github.rest.issues.async_update(
             owner=owner, repo=repo, issue_number=issue_number, title=title
         )
 
+
+@with_github
+async def post_summary(
+    owner_repo: str, issue_number: int, summary: Summary, github: GitHub
+) -> None:
+    owner, repo = owner_repo.split("/")
     logger.debug(
         f"Posting summary to issue #{issue_number}:\n{summary.model_dump_json(indent=2)}"
     )
