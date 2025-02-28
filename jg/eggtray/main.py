@@ -1,13 +1,15 @@
 import asyncio
 import json
 import logging
+import re
 from operator import attrgetter
 from pathlib import Path
-from typing import Generator, Iterable, cast
+from typing import Generator, Iterable
 
 import click
-from githubkit import GitHub
 import yaml
+from githubkit import GitHub
+from jg.hen.clients import with_github
 from jg.hen.core import check_profile_url
 from jg.hen.models import Summary
 
@@ -108,9 +110,6 @@ def create_profiles(
     "--repo", "owner_repo", default="juniorguru/eggtray", help="GitHub repository."
 )
 @click.option(
-    "--user-agent", default="JuniorGuruBot (+https://junior.guru)", help="User agent."
-)
-@click.option(
     "--event",
     "event_path",
     envvar="GITHUB_EVENT_PATH",
@@ -120,7 +119,6 @@ def create_profiles(
 def issue(
     issue_number: int,
     owner_repo: str,
-    user_agent: str,
     event_path: Path | None = None,
     github_api_key: str | None = None,
 ):
@@ -133,29 +131,36 @@ def issue(
         payload = json.loads(event_path.read_text())
         issue_number = payload["issue"]["number"]
     logger.info(f"Processing issue #{issue_number}")
-    print(
-        asyncio.run(
-            fetch_username_from_issue(
-                owner_repo, issue_number, user_agent, github_api_key
-            )
-        )
+    asyncio.run(process_issue(owner_repo, issue_number, github_api_key))
+
+
+async def process_issue(
+    owner_repo: str, issue_number: int, github_api_key: str | None = None
+):
+    logger.info(f"Fetching issue #{issue_number}")
+    username = await fetch_username_from_issue(
+        owner_repo, issue_number, github_api_key=github_api_key
     )
+    if username:
+        profile_url = f"https://github.com/{username}"
+        logger.info(f"Checking profile: {profile_url}")
+        summary: Summary = await check_profile_url(
+            profile_url, github_api_key=github_api_key
+        )
+        logger.info("Posting summary")
+        await post_summary(owner_repo, issue_number, summary)
 
 
+@with_github
 async def fetch_username_from_issue(
-    owner_repo: str,
-    issue_number: int,
-    user_agent: str,
-    github_api_key: str | None = None,
+    owner_repo: str, issue_number: int, github: GitHub
 ) -> str | None:
     logger.debug(f"GitHub repository: {owner_repo}")
     owner, repo = owner_repo.split("/")
 
-    logger.debug(f"User agent: {user_agent}")
-    async with GitHub(github_api_key, user_agent=user_agent) as github:
-        response = await github.rest.issues.async_get(
-            owner=owner, repo=repo, issue_number=issue_number
-        )
+    response = await github.rest.issues.async_get(
+        owner=owner, repo=repo, issue_number=issue_number
+    )
     issue = response.parsed_data
     label_names = {label.name for label in issue.labels}  # type: ignore
 
@@ -165,6 +170,30 @@ async def fetch_username_from_issue(
     if "check" not in label_names:
         logger.warning(f"Issue #{issue_number} is missing the 'check' label")
         return
+    if not issue.body or not issue.body.strip():
+        logger.warning(f"Issue #{issue_number} is missing a body")
+        return
 
-    logger.info(f"Title: {issue.title}")
-    logger.info(f"Body: {issue.body!r}")
+    logger.debug(f"Getting username from issue #{issue_number}: {issue.body!r}")
+    if match := re.search(r"\bcheck\s+@(\w+)", issue.body, re.I):
+        return match.group(1)
+
+
+@with_github
+async def post_summary(
+    owner_repo: str, issue_number: int, summary: Summary, github: GitHub
+) -> None:
+    logger.debug(
+        f"Posting summary to issue #{issue_number}:\n{summary.model_dump_json(indent=2)}"
+    )
+    owner, repo = owner_repo.split("/")
+    await github.rest.issues.async_create_comment(
+        owner=owner,
+        repo=repo,
+        issue_number=issue_number,
+        body=f"```json\n{summary.model_dump_json(indent=2)}\n```",
+    )
+    logger.debug(f"Closing issue #{issue_number}")
+    await github.rest.issues.async_update(
+        owner=owner, repo=repo, issue_number=issue_number, state="closed"
+    )
