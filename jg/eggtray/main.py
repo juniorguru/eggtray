@@ -3,9 +3,10 @@ import json
 import logging
 from operator import attrgetter
 from pathlib import Path
-from typing import Generator, Iterable
+from typing import Generator, Iterable, cast
 
 import click
+from githubkit import GitHub
 import yaml
 from jg.hen.core import check_profile_url
 from jg.hen.models import Summary
@@ -104,6 +105,12 @@ def create_profiles(
 @main.command()
 @click.argument("issue_number", type=int, required=False)
 @click.option(
+    "--repo", "owner_repo", default="juniorguru/eggtray", help="GitHub repository."
+)
+@click.option(
+    "--user-agent", default="JuniorGuruBot (+https://junior.guru)", help="User agent."
+)
+@click.option(
     "--event",
     "event_path",
     envvar="GITHUB_EVENT_PATH",
@@ -111,7 +118,11 @@ def create_profiles(
 )
 @click.option("--github-api-key", envvar="GITHUB_API_KEY", help="GitHub API key.")
 def issue(
-    issue_number: int, event_path: Path | None, github_api_key: str | None = None
+    issue_number: int,
+    owner_repo: str,
+    user_agent: str,
+    event_path: Path | None = None,
+    github_api_key: str | None = None,
 ):
     logger.info(f"Using GitHub token: {'yes' if github_api_key else 'no'}")
     logger.info(f"Event payload path: {event_path}")
@@ -122,3 +133,38 @@ def issue(
         payload = json.loads(event_path.read_text())
         issue_number = payload["issue"]["number"]
     logger.info(f"Processing issue #{issue_number}")
+    print(
+        asyncio.run(
+            fetch_username_from_issue(
+                owner_repo, issue_number, user_agent, github_api_key
+            )
+        )
+    )
+
+
+async def fetch_username_from_issue(
+    owner_repo: str,
+    issue_number: int,
+    user_agent: str,
+    github_api_key: str | None = None,
+) -> str | None:
+    logger.debug(f"GitHub repository: {owner_repo}")
+    owner, repo = owner_repo.split("/")
+
+    logger.debug(f"User agent: {user_agent}")
+    async with GitHub(github_api_key, user_agent=user_agent) as github:
+        response = await github.rest.issues.async_get(
+            owner=owner, repo=repo, issue_number=issue_number
+        )
+    issue = response.parsed_data
+    label_names = {label.name for label in issue.labels}  # type: ignore
+
+    if issue.state == "closed":
+        logger.warning(f"Issue #{issue_number} is closed")
+        return
+    if "check" not in label_names:
+        logger.warning(f"Issue #{issue_number} is missing the 'check' label")
+        return
+
+    logger.info(f"Title: {issue.title}")
+    logger.info(f"Body: {issue.body!r}")
