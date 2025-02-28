@@ -4,10 +4,6 @@ on:
   issues:
     types: [opened, reopened, edited, labeled]
 
-permissions:
-  contents: read
-  issues: write
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -30,4 +26,4 @@ jobs:
       - name: Check
         run: poetry run eggtray issue
         env:
-          GITHUB_API_KEY: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_API_KEY: ${{ secrets.GH_PAT }}
