@@ -109,4 +109,5 @@ def create_profiles(
 )
 @click.option("--github-api-key", envvar="GITHUB_API_KEY", help="GitHub API key.")
 def issue(payload_path: Path, github_api_key: str | None = None):
-    print(json.loads(payload_path.read_text()))
+    print(payload_path.read_text())
+    # print(json.loads(payload_path.read_text()))
