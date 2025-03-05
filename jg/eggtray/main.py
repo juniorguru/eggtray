@@ -18,6 +18,10 @@ from jg.eggtray.models import Document, Profile, Response
 logger = logging.getLogger("jg.eggtray")
 
 
+def multiline_str(string: str) -> str:
+    return string.replace("\\n", "\n")
+
+
 @click.group()
 @click.option("-d", "--debug", default=False, is_flag=True, help="Show debug logs.")
 def main(
@@ -125,6 +129,7 @@ def create_profiles(
     "--github-private-key",
     envvar="GITHUB_PRIVATE_KEY",
     help="GitHub app's private key.",
+    type=multiline_str,
     required=True,
 )
 @click.option(
