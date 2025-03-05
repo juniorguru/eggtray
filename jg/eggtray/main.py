@@ -8,8 +8,7 @@ from typing import Generator, Iterable
 
 import click
 import yaml
-from githubkit import GitHub
-from jg.hen.clients import with_github
+from githubkit import AppInstallationAuthStrategy, BaseAuthStrategy, GitHub
 from jg.hen.core import check_profile_url
 from jg.hen.models import Summary
 
@@ -110,7 +109,23 @@ def create_profiles(
     "--repo", "owner_repo", default="juniorguru/eggtray", help="GitHub repository."
 )
 @click.option(
-    "--github-api-key", envvar="GITHUB_API_KEY", help="GitHub API key.", required=True
+    "--github-client-id",
+    envvar="GITHUB_CLIENT_ID",
+    help="GitHub app's client ID.",
+    required=True,
+)
+@click.option(
+    "--github-installation-id",
+    envvar="GITHUB_INSTALLATION_ID",
+    help="GitHub app's installation ID.",
+    type=int,
+    required=True,
+)
+@click.option(
+    "--github-private-key",
+    envvar="GITHUB_PRIVATE_KEY",
+    help="GitHub app's private key.",
+    required=True,
 )
 @click.option(
     "--event",
@@ -121,7 +136,9 @@ def create_profiles(
 def issue(
     issue_number: int,
     owner_repo: str,
-    github_api_key: str,
+    github_client_id: str,
+    github_installation_id: int,
+    github_private_key: str,
     event_path: Path | None = None,
 ):
     logger.info(f"Event payload path: {event_path}")
@@ -132,23 +149,28 @@ def issue(
         payload = json.loads(event_path.read_text())
         issue_number = payload["issue"]["number"]
     logger.info(f"Processing issue #{issue_number}")
-    asyncio.run(process_issue(owner_repo, issue_number, github_api_key=github_api_key))
+    auth = AppInstallationAuthStrategy(
+        github_client_id, github_private_key, github_installation_id
+    )
+    asyncio.run(process_issue(auth, owner_repo, issue_number))
 
 
-@with_github
-async def process_issue(owner_repo: str, issue_number: int, github: GitHub):
-    logger.info(f"Fetching issue https://github.com/{owner_repo}/issues/{issue_number}")
-    username = await fetch_username_from_issue(github, owner_repo, issue_number)
-    if username:
-        title = f"Profile check: {username}"
-        await update_title(github, owner_repo, issue_number, title)
-        profile_url = f"https://github.com/{username}"
-        logger.info(f"Checking profile: {profile_url}")
-        summary: Summary = await check_profile_url(
-            profile_url, github_api_key=github.auth.token
-        )
-        logger.info("Posting summary")
-        await post_summary(github, owner_repo, issue_number, summary)
+async def process_issue(
+    auth: BaseAuthStrategy,
+    owner_repo: str,
+    issue_number: int,
+):
+    async with GitHub(auth=auth) as github:
+        logger.info(f"Fetching https://github.com/{owner_repo}/issues/{issue_number}")
+        username = await fetch_username_from_issue(github, owner_repo, issue_number)
+        if username:
+            title = f"Profile check: {username}"
+            await update_title(github, owner_repo, issue_number, title)
+            profile_url = f"https://github.com/{username}"
+            logger.info(f"Checking profile: {profile_url}")
+            summary: Summary = await check_profile_url(profile_url, github=github)
+            logger.info("Posting summary")
+            await post_summary(github, owner_repo, issue_number, summary)
 
 
 async def fetch_username_from_issue(
