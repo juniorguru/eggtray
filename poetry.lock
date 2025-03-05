@@ -92,13 +92,13 @@ files = [
 
 [[package]]
 name = "githubkit"
-version = "0.12.7"
+version = "0.12.8"
 description = "GitHub SDK for Python"
 optional = false
 python-versions = "<4.0,>=3.9"
 files = [
-    {file = "githubkit-0.12.7-py3-none-any.whl", hash = "sha256:26278e97feb68b1bde47b309c95885edccab9a27042375d7fa0b6ccebc870a7c"},
-    {file = "githubkit-0.12.7.tar.gz", hash = "sha256:770378423c4a5ee5c035705822bb67ab6cccdf7e914e7b773827282ccd9f04a7"},
+    {file = "githubkit-0.12.8-py3-none-any.whl", hash = "sha256:f90592a0d9e154bde77450daed6b7cd187fcef023a1722b481aa38b082bbb3f6"},
+    {file = "githubkit-0.12.8.tar.gz", hash = "sha256:9339512326d2cc879cd68bf1910aa200c6701b2737bf180f901ca47f76cb6b6d"},
 ]
 
 [package.dependencies]
@@ -228,7 +228,7 @@ develop = false
 blinker = "1.9.0"
 click = "8.1.8"
 cssselect = "1.2.0"
-githubkit = "0.12.7"
+githubkit = "0.12.8"
 httpx = "0.28.1"
 lxml = "5.3.1"
 pillow = "11.1.0"
@@ -238,7 +238,7 @@ pydantic = "2.10.6"
 type = "git"
 url = "https://github.com/juniorguru/hen.git"
 reference = "HEAD"
-resolved_reference = "ec9094e489d3a6ed0e2f682597ee7b6270c42a8b"
+resolved_reference = "e7938884ea66381ff0c5482c00efcc913642ff0f"
 
 [[package]]
 name = "lxml"
@@ -800,4 +800,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.12"
-content-hash = "e44f9c6743abc59fc561580ee46fa9f0279da68071ec01793a2411743e78efb8"
+content-hash = "7d22a35adffac0c5252f7cb240b9272a05852ab161b85b9559255261033b83fb"

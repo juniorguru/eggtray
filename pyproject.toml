@@ -19,7 +19,7 @@ click = "8.1.8"
 pydantic = "2.10.6"
 pyyaml = "6.0.2"
 pycountry = "24.6.1"
-githubkit = "0.12.7"
+githubkit = "0.12.8"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "8.3.5"
