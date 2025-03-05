@@ -146,8 +146,6 @@ def issue(
     github_private_key: str,
     event_path: Path | None = None,
 ):
-    print("DEBUG", repr(github_private_key[30:100]))
-    return
     logger.info(f"Event payload path: {event_path}")
     if issue_number is None:
         if event_path is None:
