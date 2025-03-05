@@ -4,8 +4,12 @@ on:
   issues:
     types: [opened, reopened, edited, labeled]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
 jobs:
-  test:
+  check:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -26,4 +30,6 @@ jobs:
       - name: Check
         run: poetry run eggtray issue
         env:
-          GITHUB_API_KEY: ${{ secrets.GH_PAT }}
+          GITHUB_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
+          GITHUB_INSTALLATION_ID: ${{ secrets.GH_INSTALLATION_ID }}
+          GITHUB_PRIVATE_KEY: ${{ secrets.GH_PRIVATE_KEY }}
