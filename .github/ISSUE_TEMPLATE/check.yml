@@ -1,0 +1,23 @@
+name: GitHub profile check
+description: Ask for a feedback on your GitHub profile
+title: "Profile check: "
+labels: ["check"]
+# assignees:
+#   - octocat
+body:
+  - type: input
+    id: username
+    attributes:
+      label: GitHub username
+      description: Which profile would you like to to get feedback on?
+      placeholder: ex. @octocat
+    validations:
+      required: true
+  # - type: checkboxes
+  #   id: terms
+  #   attributes:
+  #     label: Code of Conduct
+  #     description: By submitting this issue, you agree to follow our [Code of Conduct](https://example.com).
+  #     options:
+  #       - label: I agree to follow this project's Code of Conduct
+  #         required: true
