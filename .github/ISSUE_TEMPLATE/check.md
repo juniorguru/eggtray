@@ -1,6 +1,7 @@
 ---
 name: GitHub profile check
 about: Ask for a feedback on your GitHub profile
+title: "Profile check: username"
 labels: check
 ---
 
