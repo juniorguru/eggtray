@@ -10,7 +10,7 @@ repository = "https://github.com/juniorguru/eggtray/"
 packages = [{ include = "jg" }]
 
 [tool.poetry.scripts]
-eggtray = "jg.eggtray.main:main"
+eggtray = "jg.eggtray.cli:main"
 
 [tool.poetry.dependencies]
 python = "~3.12"
