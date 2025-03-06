@@ -59,9 +59,9 @@ async def fetch_username_from_issue(
     issue: Issue = response.parsed_data
     label_names = {label.name for label in cast(list[IssueLabel], issue.labels)}
 
-    # if issue.state == "closed":
-    #     logger.warning(f"Issue #{issue_number} is closed")
-    #     return
+    if issue.state == "closed":
+        logger.warning(f"Issue #{issue_number} is closed")
+        return
     if "check" not in label_names:
         logger.warning(f"Issue #{issue_number} is missing the 'check' label")
         return
@@ -152,8 +152,7 @@ def format_summary_body(summary: Summary, run_url: str | None = None) -> str:
         )
     else:
         text = (
-            "Tak jsem na to kouklo a tady je moje zpětná vazba 🔬 "
-            "Pokud si opravíš chyby, stačí znovuotevřít tohle issue a já ti na to zase mrknu.\n\n"
+            "Tak jsem na to kouklo a tady je moje zpětná vazba 🔬\n\n"
             "| Verdikt | Popis | Vysvětlení |\n"
             "|---------|-------|------------|\n"
         )
