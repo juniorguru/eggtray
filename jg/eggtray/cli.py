@@ -135,6 +135,7 @@ def issue(
             logger.error("Issue number or event payload path is required")
             raise click.Abort()
         payload = json.loads(github_event_path.read_text())
+        logger.info(f"Event action: {payload['action']}")
         issue_number = payload["issue"]["number"]
     logger.info(f"Processing issue #{issue_number}")
     owner, repo = owner_repo.split("/")
