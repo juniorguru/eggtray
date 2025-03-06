@@ -144,11 +144,15 @@ async def process_issue(
         if username:
             title = f"Profile check: {username}"
             await update_title(github, owner_repo, issue_number, title)
+            comment_id = await post_comment(github, owner_repo, issue_number)
             profile_url = f"https://github.com/{username}"
             logger.info(f"Checking profile: {profile_url}")
             summary: Summary = await check_profile_url(profile_url, github=github)
             logger.info("Posting summary")
-            await post_summary(github, owner_repo, issue_number, summary)
+            await post_summary(github, owner_repo, comment_id, summary)
+            await close_issue(github, owner_repo, issue_number)
+        else:
+            logger.info("Skipping issue as not relevant")
 
 
 async def fetch_username_from_issue(
@@ -163,9 +167,9 @@ async def fetch_username_from_issue(
     issue = response.parsed_data
     label_names = {label.name for label in issue.labels}  # type: ignore
 
-    if issue.state == "closed":
-        logger.warning(f"Issue #{issue_number} is closed")
-        return
+    # if issue.state == "closed":
+    #     logger.warning(f"Issue #{issue_number} is closed")
+    #     return
     if "check" not in label_names:
         logger.warning(f"Issue #{issue_number} is missing the 'check' label")
         return
@@ -194,19 +198,40 @@ async def update_title(github: GitHub, owner_repo: str, issue_number: int, title
         )
 
 
-async def post_summary(
-    github: GitHub, owner_repo: str, issue_number: int, summary: Summary
-) -> None:
+async def post_comment(github: GitHub, owner_repo: str, issue_number: int) -> int:
     owner, repo = owner_repo.split("/")
-    logger.debug(
-        f"Posting summary to issue #{issue_number}:\n{summary.model_dump_json(indent=2)}"
-    )
-    await github.rest.issues.async_create_comment(
+    logger.debug(f"Posting comment to issue #{issue_number}")
+    response = await github.rest.issues.async_create_comment(
         owner=owner,
         repo=repo,
         issue_number=issue_number,
-        body=f"```json\n{summary.model_dump_json(indent=2)}\n```",
+        body="Checking the profile...",
     )
+    return response.parsed_data.id
+
+
+async def post_summary(
+    github: GitHub, owner_repo: str, comment_id: int, summary: Summary
+) -> None:
+    owner, repo = owner_repo.split("/")
+    logger.debug(
+        f"Updating comment #{comment_id} with summary:\n{summary.model_dump_json(indent=2)}"
+    )
+    await github.rest.issues.async_update_comment(
+        owner=owner,
+        repo=repo,
+        comment_id=comment_id,
+        body=(
+            f"<details>\n\n"
+            f"<summary>JSON</summary>\n\n"
+            f"```json\n{summary.model_dump_json(indent=2)}\n```\n\n"
+            f"</details>"
+        ),
+    )
+
+
+async def close_issue(github: GitHub, owner_repo: str, issue_number: int):
+    owner, repo = owner_repo.split("/")
     logger.debug(f"Closing issue #{issue_number}")
     await github.rest.issues.async_update(
         owner=owner, repo=repo, issue_number=issue_number, state="closed"
