@@ -8,13 +8,20 @@ from githubkit.versions.latest.models import (
     IssuePropLabelsItemsOneof1 as IssueLabel,
 )
 from jg.hen.core import check_profile_url
-from jg.hen.models import Summary
+from jg.hen.models import Status, Summary
 
 
 logger = logging.getLogger(__name__)
 
 
 TRIGGER_RE = re.compile(r"\bcheck\s+@(\w+)", re.I)
+
+COLORS = {
+    Status.ERROR: "🔴",
+    Status.WARNING: "🟠",
+    Status.INFO: "🔵",
+    Status.DONE: "🟢",
+}
 
 
 async def process_issue(
@@ -113,7 +120,12 @@ def format_comment_body(run_url: str | None = None) -> str:
 
 
 async def post_summary(
-    github: GitHub, owner: str, repo: str, comment_id: int, summary: Summary
+    github: GitHub,
+    owner: str,
+    repo: str,
+    comment_id: int,
+    summary: Summary,
+    run_url: str | None = None,
 ) -> None:
     logger.debug(
         f"Updating comment #{comment_id} with summary:\n{summary.model_dump_json(indent=2)}"
@@ -122,13 +134,36 @@ async def post_summary(
         owner=owner,
         repo=repo,
         comment_id=comment_id,
-        body=(
-            f"<details>\n\n"
-            f"<summary>JSON</summary>\n\n"
-            f"```json\n{summary.model_dump_json(indent=2)}\n```\n\n"
-            f"</details>"
-        ),
+        body=format_summary_body(summary),
     )
+
+
+def format_summary_body(summary: Summary, run_url: str | None = None) -> str:
+    if summary.error:
+        text = (
+            f"🔬 I've took a look at the profile, but unfortunately it ended with an error 🤕\n"
+            f"```\n{summary.error}\n```\n"
+            f"@honzajavorek, take a look at this, please."
+        )
+    else:
+        text = "🔬 I'm done reviewing the profile!\n\n"
+        for outcome in summary.outcomes:
+            text += (
+                f"{COLORS[outcome.status]} {outcome.message}"
+                "\n\n"
+                f"ℹ️ [Explanation]({outcome.docs_url})"
+                "\n\n"
+            )
+    text += "\n\n---\n\n"
+    if run_url:
+        text += f"[See the log here]({run_url}) 👀"
+    text += (
+        "<details>\n\n"
+        "<summary>See the results as JSON</summary>\n\n"
+        f"```json\n{summary.model_dump_json(indent=2)}\n```\n\n"
+        "</details>"
+    )
+    return text
 
 
 async def close_issue(github: GitHub, owner: str, repo: str, issue_number: int) -> None:
