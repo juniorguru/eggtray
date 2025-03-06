@@ -134,7 +134,7 @@ async def post_summary(
         owner=owner,
         repo=repo,
         comment_id=comment_id,
-        body=format_summary_body(summary),
+        body=format_summary_body(summary, run_url=run_url),
     )
 
 
