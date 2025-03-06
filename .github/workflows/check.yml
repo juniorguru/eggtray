@@ -9,6 +9,7 @@ concurrency:
 
 jobs:
   check:
+    if: contains(github.event.issue.labels.*.name, 'check')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
