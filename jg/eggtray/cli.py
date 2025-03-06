@@ -138,4 +138,5 @@ def issue(
         issue_number = payload["issue"]["number"]
     logger.info(f"Processing issue #{issue_number}")
     owner, repo = owner_repo.split("/")
+    logger.debug(f"GitHub repository: {owner}/{repo}")
     asyncio.run(process_issue(github_auth, owner, repo, issue_number, run_id=github_run_id))

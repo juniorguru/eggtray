@@ -14,7 +14,7 @@ from jg.hen.models import Status, Summary
 logger = logging.getLogger(__name__)
 
 
-TRIGGER_RE = re.compile(r"\bcheck\s+@(\w+)", re.I)
+USERNAME_RE = re.compile(r"@(\w+)")
 
 COLORS = {
     Status.ERROR: "🔴",
@@ -36,7 +36,7 @@ async def process_issue(
         logger.info(f"Fetching https://github.com/{owner}/{repo}/issues/{issue_number}")
         username = await fetch_username_from_issue(github, owner, repo, issue_number)
         if username:
-            title = f"Profile check: {username}"
+            title = f"Zpětná vazba na profil {username}"
             await update_title(github, owner, repo, issue_number, title)
             comment_id = await post_comment(github, owner, repo, issue_number, run_url=run_url)
             profile_url = f"https://github.com/{username}"
@@ -52,16 +52,16 @@ async def process_issue(
 async def fetch_username_from_issue(
     github: GitHub, owner: str, repo: str, issue_number: int
 ) -> str | None:
-    logger.debug(f"GitHub repository: {owner}/{repo}")
+    logger.debug(f"Fetching username from issue #{issue_number}")
     response = await github.rest.issues.async_get(
         owner=owner, repo=repo, issue_number=issue_number
     )
     issue: Issue = response.parsed_data
     label_names = {label.name for label in cast(list[IssueLabel], issue.labels)}
 
-    if issue.state == "closed":
-        logger.warning(f"Issue #{issue_number} is closed")
-        return
+    # if issue.state == "closed":
+    #     logger.warning(f"Issue #{issue_number} is closed")
+    #     return
     if "check" not in label_names:
         logger.warning(f"Issue #{issue_number} is missing the 'check' label")
         return
@@ -70,10 +70,10 @@ async def fetch_username_from_issue(
         return
 
     logger.debug(f"Getting username from issue #{issue_number}: {issue.body!r}")
-    if match := TRIGGER_RE.search(issue.body, re.I):
+    if match := USERNAME_RE.search(issue.body, re.I):
         return match.group(1)
     else:
-        logger.warning(f"Issue #{issue_number} doesn't contain trigger")
+        logger.warning(f"Issue #{issue_number} doesn't mention a username")
         return
 
 
@@ -107,15 +107,20 @@ def format_comment_body(run_url: str | None = None) -> str:
     text = (
         "Ahoj!"
         "\n\n"
-        "🔬 I see you've requested a profile review—awesome! "
-        "I'm already flapping into action. "
-        "I'll update this comment with results and close the issue once I'm done. "
+        "🔬 Koukám, že chceš, abych ti dalo zpětnou vazbu na GitHub profil. "
+        "Tak jo, letím na to! "
+        "Až budu mít hotovo, objeví se tady výsledky a zavřu tohle issue. "
         "\n\n"
-        "⏳ Big profiles can take a few minutes, so grab a coffee, stretch, "
-        "or stare dramatically into the distance while you wait."
+        "⏳ Projít velké profily mi trvá i několik minut"
     )
     if run_url:
-        text += f"\n\n---\n\n[Track my progress here]({run_url}) 👀"
+        text += (
+            ", tak pokud se dlouho nic neděje, "
+            f"můžeš mi [koukat pod zobáček]({run_url}). "
+            "Ale možná se spíš koukni z okna a protáhni si záda."
+        )
+    else:
+        text += ", tak si zatím třeba protáhni záda."
     return text
 
 
@@ -141,28 +146,32 @@ async def post_summary(
 def format_summary_body(summary: Summary, run_url: str | None = None) -> str:
     if summary.error:
         text = (
-            f"🔬 I've took a look at the profile, but unfortunately it ended with an error 🤕\n"
+            f"Kouklo jsem na to, ale bohužel to skončilo chybou 🤕\n"
             f"```\n{summary.error}\n```\n"
-            f"@honzajavorek, take a look at this, please."
+            f"@honzajavorek, mrkni na to, prosím."
         )
     else:
-        text = "🔬 I'm done reviewing the profile!\n\n"
+        text = (
+            "Tak jsem na to kouklo a tady je moje zpětná vazba 🔬 "
+            "Pokud si opravíš chyby, stačí znovu otevřít issue a já ti na to zase mrknu.\n\n"
+            "| Verdikt | Popis | Vysvětlení |\n"
+            "|---------|-------|------------|\n"
+        )
         for outcome in summary.outcomes:
             text += (
-                f"{COLORS[outcome.status]} {outcome.message}"
-                "\n\n"
-                f"ℹ️ [Explanation]({outcome.docs_url})"
-                "\n\n"
+                f"| {COLORS[outcome.status]} "
+                f"| {outcome.message} "
+                f"| [Proč?]({outcome.docs_url}) "
+                " |\n"
             )
-    text += "\n\n---\n\n"
-    if run_url:
-        text += f"[See the log here]({run_url}) 👀"
     text += (
-        "<details>\n\n"
-        "<summary>See the results as JSON</summary>\n\n"
+        "\n\n<details>\n\n"
+        "<summary>Výsledky jako JSON</summary>\n\n"
         f"```json\n{summary.model_dump_json(indent=2)}\n```\n\n"
         "</details>"
     )
+    if run_url:
+        text += f"\n\n---\n\n[Záznam mojí práce]({run_url}) 👀"
     return text
 
 
