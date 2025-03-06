@@ -153,7 +153,7 @@ def format_summary_body(summary: Summary, run_url: str | None = None) -> str:
     else:
         text = (
             "Tak jsem na to kouklo a tady je moje zpětná vazba 🔬 "
-            "Pokud si opravíš chyby, stačí znovu otevřít issue a já ti na to zase mrknu.\n\n"
+            "Pokud si opravíš chyby, stačí znovuotevřít tohle issue a já ti na to zase mrknu.\n\n"
             "| Verdikt | Popis | Vysvětlení |\n"
             "|---------|-------|------------|\n"
         )
