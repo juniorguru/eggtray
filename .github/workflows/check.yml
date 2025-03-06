@@ -2,7 +2,7 @@ name: check
 
 on:
   issues:
-    types: [opened, reopened, edited, labeled]
+    types: [opened, reopened, labeled]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.issue.number }}
