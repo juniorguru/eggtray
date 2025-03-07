@@ -53,6 +53,12 @@ class Profile(BaseModel):
 
     @classmethod
     def create(cls, document: Document, summary: Summary) -> Self:
+        # Ensure it's a success summary
+        if summary.error:
+            raise ValueError("Summary contains an error")
+        if not summary.info:
+            raise ValueError("Summary contains no info")
+
         # Ensure that the usernames match
         usernames = [document.username, summary.username]
         if len(set(usernames)) != 1:

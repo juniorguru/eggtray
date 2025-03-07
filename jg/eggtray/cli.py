@@ -109,22 +109,33 @@ def create_profiles(
 @click.option(
     "--repo", "owner_repo", default="juniorguru/eggtray", help="GitHub repository."
 )
+@click.option(
+    "-s",
+    "--state",
+    "states",
+    multiple=True,
+    default=["open"],
+    type=click.Choice(["open", "closed"]),
+    help="Allowed GitHub issue states, comma-separated. Useful for debugging.",
+)
 @github_auth
 @click.option(
     "--github-event",
     "github_event_path",
     envvar="GITHUB_EVENT_PATH",
     type=click.Path(exists=True, dir_okay=False, file_okay=True, path_type=Path),
+    help="Location of GitHub's event payload. Relevant only inside GitHub Actions run.",
 )
 @click.option(
     "--github-run-id",
     envvar="GITHUB_RUN_ID",
-    help="GitHub run ID.",
-    type=int
+    type=int,
+    help="GitHub run ID. Relevant only inside GitHub Actions run.",
 )
 def issue(
     issue_number: int,
     owner_repo: str,
+    states: list[str],
     github_auth: BaseAuthStrategy,
     github_event_path: Path | None = None,
     github_run_id: int | None = None,
@@ -140,4 +151,8 @@ def issue(
     logger.info(f"Processing issue #{issue_number}")
     owner, repo = owner_repo.split("/")
     logger.debug(f"GitHub repository: {owner}/{repo}")
-    asyncio.run(process_issue(github_auth, owner, repo, issue_number, run_id=github_run_id))
+    asyncio.run(
+        process_issue(
+            github_auth, owner, repo, issue_number, states=states, run_id=github_run_id
+        )
+    )

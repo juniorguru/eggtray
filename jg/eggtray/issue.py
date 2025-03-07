@@ -3,6 +3,7 @@ import re
 from typing import cast
 
 from githubkit import BaseAuthStrategy, GitHub
+from githubkit.exception import RequestFailed
 from githubkit.versions.latest.models import (
     Issue,
     IssuePropLabelsItemsOneof1 as IssueLabel,
@@ -25,8 +26,15 @@ COLORS = {
 
 
 async def process_issue(
-    auth: BaseAuthStrategy, owner: str, repo: str, issue_number: int, run_id: int | None = None
+    auth: BaseAuthStrategy,
+    owner: str,
+    repo: str,
+    issue_number: int,
+    states: list[str] | None = None,
+    run_id: int | None = None,
 ) -> None:
+    if not states:
+        states = ["open"]
     if run_id:
         run_url = f"https://github.com/{owner}/{repo}/actions/runs/{run_id}"
         logger.info(f"Working inside {run_url}")
@@ -34,49 +42,90 @@ async def process_issue(
         run_url = None
     async with GitHub(auth=auth) as github:
         logger.info(f"Fetching https://github.com/{owner}/{repo}/issues/{issue_number}")
-        username = await fetch_username_from_issue(github, owner, repo, issue_number)
-        if username:
-            title = f"Zpětná vazba na profil {username}"
+        issue = await fetch_issue(github, owner, repo, issue_number)
+        if issue.state not in states:
+            logger.warning(
+                f"Issue #{issue_number} is {issue.state}, allowed states: {','.join(states)}"
+            )
+            return
+        if not has_label(issue, "check"):
+            logger.warning(f"Issue #{issue_number} is missing the 'check' label")
+            return
+
+        logger.info(f"Figuring out GitHub username from issue #{issue_number}")
+        if username := get_username(issue.body or ""):
+            logger.info(f"Issue #{issue_number} mentions @{username}")
+        elif issue.user:
+            logger.info(
+                f"Issue #{issue_number} doesn't mention a username, assuming author"
+            )
+            username = issue.user.login
+        else:
+            logger.warning(
+                f"Issue #{issue_number} doesn't mention a username and has no author"
+            )
+            return
+
+        profile_url = f"https://github.com/{username}"
+        if await profile_exists(github, username):
+            logger.info(f"Checking profile {profile_url}")
+            title = f"Zpětná vazba na profil @{username}"
             await update_title(github, owner, repo, issue_number, title)
-            comment_id = await post_comment(github, owner, repo, issue_number, run_url=run_url)
-            profile_url = f"https://github.com/{username}"
-            logger.info(f"Checking profile: {profile_url}")
+            comment_id = await post_comment(
+                github,
+                owner,
+                repo,
+                issue_number,
+                get_wait_comment_text(username, run_url=run_url),
+            )
             summary: Summary = await check_profile_url(profile_url, github=github)
             logger.info("Posting summary")
             await post_summary(
                 github, owner, repo, comment_id, summary, run_url=run_url
             )
-            await close_issue(github, owner, repo, issue_number)
         else:
-            logger.info("Skipping issue as not relevant")
+            logger.error(f"Profile {profile_url} doesn't exist")
+            await post_comment(
+                github,
+                owner,
+                repo,
+                issue_number,
+                get_missing_profile_comment_text(username, run_url=run_url),
+            )
+        await close_issue(github, owner, repo, issue_number)
 
 
-async def fetch_username_from_issue(
+async def fetch_issue(
     github: GitHub, owner: str, repo: str, issue_number: int
-) -> str | None:
-    logger.debug(f"Fetching username from issue #{issue_number}")
+) -> Issue:
+    logger.debug(f"Fetching issue #{issue_number}")
     response = await github.rest.issues.async_get(
         owner=owner, repo=repo, issue_number=issue_number
     )
-    issue: Issue = response.parsed_data
-    label_names = {label.name for label in cast(list[IssueLabel], issue.labels)}
+    return response.parsed_data
 
-    if issue.state == "closed":
-        logger.warning(f"Issue #{issue_number} is closed")
-        return
-    if "check" not in label_names:
-        logger.warning(f"Issue #{issue_number} is missing the 'check' label")
-        return
-    if not issue.body or not issue.body.strip():
-        logger.warning(f"Issue #{issue_number} is missing a body")
-        return
 
-    logger.debug(f"Getting username from issue #{issue_number}: {issue.body!r}")
-    if match := USERNAME_RE.search(issue.body, re.I):
+def has_label(issue: Issue, label_name: str) -> bool:
+    return any(
+        label.name == label_name for label in cast(list[IssueLabel], issue.labels)
+    )
+
+
+def get_username(body: str) -> str | None:
+    if match := USERNAME_RE.search(body):
         return match.group(1)
-    else:
-        logger.warning(f"Issue #{issue_number} doesn't mention a username")
-        return
+    return None
+
+
+async def profile_exists(github: GitHub, username: str) -> bool:
+    logger.debug(f"Checking if profile {username} exists")
+    try:
+        await github.rest.users.async_get_by_username(username)
+        return True
+    except RequestFailed as e:
+        if e.response.status_code == 404:
+            return False
+        raise
 
 
 async def update_title(github: GitHub, owner: str, repo: str, issue_number: int, title: str):
@@ -94,22 +143,29 @@ async def update_title(github: GitHub, owner: str, repo: str, issue_number: int,
         )
 
 
-async def post_comment(github: GitHub, owner: str, repo: str, issue_number: int, run_url: str | None = None) -> int:
+async def post_comment(
+    github: GitHub,
+    owner: str,
+    repo: str,
+    issue_number: int,
+    text: str,
+) -> int:
     logger.debug(f"Posting comment to issue #{issue_number}")
     response = await github.rest.issues.async_create_comment(
         owner=owner,
         repo=repo,
         issue_number=issue_number,
-        body=format_comment_body(run_url=run_url),
+        body=text,
     )
     return response.parsed_data.id
 
 
-def format_comment_body(run_url: str | None = None) -> str:
+def get_wait_comment_text(username: str, run_url: str | None = None) -> str:
     text = (
         "Ahoj!"
         "\n\n"
-        "🔬 Koukám, že chceš, abych ti dalo zpětnou vazbu na GitHub profil. "
+        "🔬 Koukám, že chceš, abych ti dalo zpětnou vazbu na GitHub profil "
+        f"[github.com/{username}](https://github.com/{username}). "
         "Tak jo, letím na to! "
         "Až budu mít hotovo, objeví se tady výsledky a zavřu tohle issue. "
         "\n\n"
@@ -123,6 +179,17 @@ def format_comment_body(run_url: str | None = None) -> str:
         )
     else:
         text += ", tak si zatím třeba protáhni záda."
+    return text
+
+
+def get_missing_profile_comment_text(username: str, run_url: str | None = None) -> str:
+    text = (
+        "Ahoj! "
+        f"Vypadá to, že chceš, ať se podívám na profil [github.com/{username}](https://github.com/{username}), "
+        "jenže ten podle všeho neexistuje 🤷"
+    )
+    if run_url:
+        text += f"\n\n---\n\n[Záznam mojí práce]({run_url}) 👀"
     return text
 
 
@@ -147,14 +214,17 @@ async def post_summary(
 
 def format_summary_body(summary: Summary, run_url: str | None = None) -> str:
     if summary.error:
+        data = summary.model_dump(mode="json")
         text = (
-            f"Kouklo jsem na to, ale bohužel to skončilo chybou 🤕\n"
-            f"```\n{summary.error}\n```\n"
+            f"Na profil jsem kouklo, ale bohužel to skončilo chybou 🤕\n"
+            f"```\n{data['error']}\n```\n"
             f"@honzajavorek, mrkni na to, prosím."
         )
     else:
         text = (
-            "Tak jsem na to kouklo a tady je moje zpětná vazba 🔬\n\n"
+            "Tak jsem si poctivě prošlo celý profil "
+            f"[github.com/{summary.username}](https://github.com/{summary.username}) "
+            "a tady je moje zpětná vazba 🔬\n\n"
             "| Verdikt | Popis | Vysvětlení |\n"
             "|---------|-------|------------|\n"
         )

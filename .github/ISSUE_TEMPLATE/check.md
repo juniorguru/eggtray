@@ -5,9 +5,4 @@ title: Zpětná vazba na profil
 labels: check
 ---
 
-<!--
-  V textu níže označ uživatelské jméno GitHub profilu,
-  na který chceš dostat zpětnou vazbu.
--->
-
-Kuřátko, mrkni prosím na @username, díky!
+Kuřátko, mrkni prosím na můj profil, díky!
