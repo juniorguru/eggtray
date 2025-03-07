@@ -14,7 +14,7 @@ from jg.hen.models import Status, Summary
 logger = logging.getLogger(__name__)
 
 
-USERNAME_RE = re.compile(r"@(\w+)")
+USERNAME_RE = re.compile(r"@([\w\-]+)")
 
 COLORS = {
     Status.ERROR: "🔴",
