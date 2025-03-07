@@ -189,7 +189,7 @@ def get_missing_profile_comment_text(username: str, run_url: str | None = None) 
         "jenže ten podle všeho neexistuje 🤷"
     )
     if run_url:
-        text += f"\n\n---\n\n[Záznam mojí práce]({run_url}) 👀"
+        text += f"\n\n---\n\n[Záznam mojí práce]({run_url})"
     return text
 
 
@@ -242,7 +242,7 @@ def format_summary_body(summary: Summary, run_url: str | None = None) -> str:
         "</details>"
     )
     if run_url:
-        text += f"\n\n---\n\n[Záznam mojí práce]({run_url}) 👀"
+        text += f"\n\n---\n\n[Záznam mojí práce]({run_url})"
     return text
 
 
