@@ -43,7 +43,9 @@ async def process_issue(
             logger.info(f"Checking profile: {profile_url}")
             summary: Summary = await check_profile_url(profile_url, github=github)
             logger.info("Posting summary")
-            await post_summary(github, owner, repo, comment_id, summary)
+            await post_summary(
+                github, owner, repo, comment_id, summary, run_url=run_url
+            )
             await close_issue(github, owner, repo, issue_number)
         else:
             logger.info("Skipping issue as not relevant")
