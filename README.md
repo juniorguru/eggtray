@@ -25,5 +25,9 @@ The API has been created for the purpose of listing entry level candidates on [j
 > [!CAUTION]
 > As of now, the API is extremely **UNSTABLE**. There are no guarantees on schema of the response. Anything can and **will** change over night.
 
+## One-off profile checks
+
+This repository also provides one-off GitHub profile checks as a service. File a [new issue with the check template](https://github.com/juniorguru/eggtray/issues/new?template=check.md), and a bot will review your profile. You'll see the results in the comments under the issue. Once the check is done, the bot closes the issue.
+
 ## License
 [AGPL-3.0-only](LICENSE), copyright (c) 2024 Jan Javorek, and contributors.
