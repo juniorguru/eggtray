@@ -24,7 +24,7 @@ githubkit = {extras = ["auth-app"], version = "0.12.8"}
 [tool.poetry.group.dev.dependencies]
 pytest = "8.3.5"
 pytest-ruff = "0.4.1"
-ruff = "0.9.*"
+ruff = "0.11.*"
 
 [tool.pytest.ini_options]
 python_files = "test_*.py"
