@@ -376,7 +376,7 @@ python-slugify = "^8.0.4"
 type = "git"
 url = "https://github.com/juniorguru/hen.git"
 reference = "HEAD"
-resolved_reference = "228fc6fa605dafc4abf82d9115e9736eb1b219e4"
+resolved_reference = "bbd0c02fa1161f8dbe8169fa8897a76185f87839"
 
 [[package]]
 name = "lxml"
