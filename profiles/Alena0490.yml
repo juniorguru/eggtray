@@ -14,4 +14,10 @@ skills:
 languages:
   - cs
   - en
+topics:
+  - web development
+  - frontend
+  - react
+secondary_school: "Zemědělská akademie Hořice"
+university: "Univerzita Hradec Králové"
 looking_for: Entry-level frontend or fullstack position
