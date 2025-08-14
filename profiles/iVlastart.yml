@@ -18,9 +18,12 @@ skills:
   -Arduino
   -SQL
   -React
+-topics:
+  -backend
+  -full-stack
 secondary_school: it
 university: null
 languages:
   -cs
   -en
-looking_for: Entry-level backend, frontend or full-stack position
+looking_for: Entry-level backend or full-stack position
