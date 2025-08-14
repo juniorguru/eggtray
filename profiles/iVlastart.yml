@@ -4,26 +4,26 @@ location: Doubravice nad Svitavou, Jihomoravský kraj
 email: vasutvlasta@gmail.com
 linkedin: https://www.linkedin.com/in/vlasta-vasut/
 skills:
-  -PHP
-  -Laravel
-  -C#
-  -WPF
-  -HTML
-  -CSS
-  -JavaScript
-  -TypeScript
-  -JQuery
-  -Python
-  -C
-  -Arduino
-  -SQL
-  -React
+  - PHP
+  - Laravel
+  - C#
+  - WPF
+  - HTML
+  - CSS
+  - JavaScript
+  - TypeScript
+  - JQuery
+  - Python
+  - C
+  - Arduino
+  - SQL
+  - React
 topics:
-  -backend
-  -full-stack
+  - backend
+  - full-stack
 secondary_school: it
 university: null
 languages:
-  -cs
-  -en
+  - cs
+  - en
 looking_for: Entry-level backend or full-stack position
