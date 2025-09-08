@@ -22,7 +22,7 @@ pycountry = "24.6.1"
 githubkit = {extras = ["auth-app"], version = "0.12.9"}
 
 [tool.poetry.group.dev.dependencies]
-pytest = "8.4.1"
+pytest = "8.4.2"
 pytest-ruff = "0.5"
 ruff = "0.12.*"
 
