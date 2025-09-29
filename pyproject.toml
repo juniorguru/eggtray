@@ -17,7 +17,7 @@ python = "~3.12"
 click = "8.1.8"
 "jg.hen" = { git = "https://github.com/juniorguru/hen.git" }
 pydantic = "2.10.6"
-pyyaml = "6.0.2"
+pyyaml = "6.0.3"
 pycountry = "24.6.1"
 githubkit = {extras = ["auth-app"], version = "0.12.9"}
 
