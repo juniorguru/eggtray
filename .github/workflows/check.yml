@@ -16,20 +16,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Install Poetry
-        run: pipx install poetry==1.8.5
-
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version-file: pyproject.toml
-          cache: poetry
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
 
       - name: Install Python dependencies
-        run: poetry install
+        run: uv sync
 
       - name: Check
-        run: poetry run eggtray issue
+        run: uv run eggtray issue
         env:
           GITHUB_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
           GITHUB_INSTALLATION_ID: ${{ secrets.GH_INSTALLATION_ID }}
