@@ -1,0 +1,27 @@
+name: Nina Belyabskaya
+github: ninabel
+discord: nina.belyavskaya
+location: Brno, Czech Republic
+email: ninaobel@gmail.com
+linkedin: https://www.linkedin.com/in/nina-belyavskaya/ 
+skills:
+  - Python
+  - Django
+  - FastAPI
+  - Pandas 
+  - Matplotlib
+  - OpenCV
+  - PostgreSQL
+  - PostGIS
+  - Git
+languages:
+  - cs
+  - en
+  - ru
+topics:
+  - python
+  - backend
+secondary_school: it
+university: it
+looking_for: junior data-related positions
+is_ready: True
