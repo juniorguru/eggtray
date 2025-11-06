@@ -19,13 +19,8 @@ languages:
 topics:
   - Java
   - backend
-secondary_school: general
-university: CTU in Prague
-experience:
-  - company: Runly Online
-    since: March 2025
-    current: true
-    position: Junior Java backed engineer
-    overview: Build core backend systems focused on outbound sales tooling for an early stage B2B SaaS automation agency
+secondary_school: non_it
+university: it
+is_ready: true
 looking_for: junior backend positions
 
