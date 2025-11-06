@@ -1,0 +1,31 @@
+name: Maksym Koval
+github: svinstvo-og
+discord: lilb3no
+location: Prague, Czech Republic
+email: maksymkoval.dev@gmail.com
+linkedin: https://www.linkedin.com/in/kovalmaksym1
+skills:
+  - Java
+  - Spring Boot
+  - PostgreSQL
+  - Docker & K8S
+  - Kafka & Rabbit MQ
+  - Redis
+  - Apache Spark
+languages:
+  - cs
+  - en
+  - ua
+topics:
+  - Java
+  - backend
+secondary_school: general
+university: CTU in Prague
+experience:
+  - company: Runly Online
+    since: March 2025
+    current: true
+    position: Junior Java backed engineer
+    overview: Build core backend systems focused on outbound sales tooling for an early stage B2B SaaS automation agency
+looking_for: junior backend positions
+
