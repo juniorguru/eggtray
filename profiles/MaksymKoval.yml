@@ -1,0 +1,26 @@
+name: Maksym Koval
+github: svinstvo-og
+discord: lilb3no
+location: Prague, Czech Republic
+email: maksymkoval.dev@gmail.com
+linkedin: https://www.linkedin.com/in/kovalmaksym1
+skills:
+  - Java
+  - Spring Boot
+  - PostgreSQL
+  - Docker & K8S
+  - Kafka & Rabbit MQ
+  - Redis
+  - Apache Spark
+languages:
+  - cs
+  - en
+  - uk
+topics:
+  - java
+  - backend
+secondary_school: non_it
+university: it
+is_ready: true
+looking_for: junior backend positions
+
