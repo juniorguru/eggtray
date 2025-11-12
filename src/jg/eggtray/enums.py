@@ -1,4 +1,4 @@
-from enum import StrEnum, auto
+from enum import StrEnum, auto, unique
 
 import pycountry
 
@@ -16,29 +16,68 @@ class School(StrEnum):
     non_it = auto()
 
 
+@unique
 class Topic(StrEnum):
     # General areas
-    frontend = auto()
     backend = auto()
+    frontend = auto()
     fullstack = auto()
     mobile = auto()
 
     # Mobile technologies
-    swift = auto()
-    kotlin = auto()
-    flutter = auto()
     android = auto()
+    flutter = auto()
+    kotlin = auto()
+    swift = auto()
 
     # Backend technologies
-    python = auto()
-    java = auto()
+    apachespark = auto()
     csharp = auto()
+    django = auto()
+    fastapi = auto()
+    java = auto()
+    kafka = auto()
+    kubernetes = auto()
+    laravel = auto()
+    php = auto()
+    postgresql = auto()
+    python = auto()
+    rabbitmq = auto()
+    redis = auto()
+    springboot = auto()
+    sql = auto()
+    wpf = auto()
+
+    # Low-level technologies
+    arduino = auto()
+    c = auto()
+    cpp = auto()
+    rust = auto()
+    zig = auto()
+
+    # GIS technologies
+    postgis = auto()
+
+    # Data-related technologies
+    pandas = auto()
+    matplotlib = auto()
+    opencv = auto()
+    tensorflow = auto()
 
     # Frontend technologies
-    typescript = auto()
-    react = auto()
-    vue = auto()
     angular = auto()
+    css = auto()
+    html = auto()
+    javascript = auto()
+    jquery = auto()
+    react = auto()
+    scss = auto()
+    typescript = auto()
+    vue = auto()
+
+    # Tools
+    docker = auto()
+    git = auto()
 
 
 Language = StrEnum(

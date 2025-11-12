@@ -2,17 +2,20 @@ from operator import attrgetter
 from typing import Any, Self
 
 from jg.hen.models import Outcome, ProjectInfo, Status, Summary
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from jg.eggtray.enums import Experience, Language, School, Topic
 
 
 class Document(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     username: str
     github_url: str
     discord_id: int | None = None
     name: str | None = None
     bio: str | None = None
+    looking_for: str | None = None
     email: str | None = None
     location: str | None = None
     topics: set[Topic]
@@ -32,8 +35,11 @@ class Document(BaseModel):
 
 
 class Profile(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     name: str | None
     bio: str | None
+    looking_for: str | None = None
     email: str | None
     avatar_url: str
     location: str | None
@@ -85,6 +91,7 @@ class Profile(BaseModel):
         return cls(
             name=document.name or summary.info.name or username,
             bio=document.bio or summary.info.bio,
+            looking_for=document.looking_for,
             email=document.email or summary.info.email,
             avatar_url=summary.info.avatar_url,
             location=document.location or summary.info.location,
@@ -105,6 +112,8 @@ class Profile(BaseModel):
 
 
 class Response(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     count: int
     items: list[Profile]
     item_schema: dict[str, Any]

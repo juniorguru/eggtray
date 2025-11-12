@@ -1,26 +1,23 @@
 name: Vlasta Vašut
-github: iVlastart
 location: Doubravice nad Svitavou, Jihomoravský kraj
 email: vasutvlasta@gmail.com
-linkedin: https://www.linkedin.com/in/vlasta-vasut/
-skills:
-  - PHP
-  - Laravel
-  - C#
-  - WPF
-  - HTML
-  - CSS
-  - JavaScript
-  - TypeScript
-  - JQuery
-  - Python
-  - C
-  - Arduino
-  - SQL
-  - React
 topics:
   - backend
   - fullstack
+  - php
+  - laravel
+  - csharp
+  - wpf
+  - html
+  - css
+  - javascript
+  - typescript
+  - jquery
+  - python
+  - c
+  - arduino
+  - sql
+  - react
 secondary_school: it
 university: null
 languages:
