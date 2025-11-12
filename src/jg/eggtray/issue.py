@@ -71,7 +71,7 @@ async def process_issue(
             logger.info(f"Checking profile {profile_url}")
             title = f"Zpětná vazba na profil @{username}"
             await update_title(github, owner, repo, issue_number, title)
-            comment_id = await post_comment(
+            await post_comment(
                 github,
                 owner,
                 repo,
@@ -80,8 +80,13 @@ async def process_issue(
             )
             summary: Summary = await check_profile_url(profile_url, github=github)
             logger.info("Posting summary")
-            await post_summary(
-                github, owner, repo, comment_id, summary, run_url=run_url
+            logger.debug("Summary:\n%s", summary.model_dump_json(indent=2))
+            await post_comment(
+                github,
+                owner,
+                repo,
+                issue_number,
+                format_summary_body(summary, run_url=run_url),
             )
         else:
             logger.error(f"Profile {profile_url} doesn't exist")
@@ -191,25 +196,6 @@ def get_missing_profile_comment_text(username: str, run_url: str | None = None) 
     if run_url:
         text += f"\n\n---\n\n[Záznam mojí práce]({run_url})"
     return text
-
-
-async def post_summary(
-    github: GitHub,
-    owner: str,
-    repo: str,
-    comment_id: int,
-    summary: Summary,
-    run_url: str | None = None,
-) -> None:
-    logger.debug(
-        f"Updating comment #{comment_id} with summary:\n{summary.model_dump_json(indent=2)}"
-    )
-    await github.rest.issues.async_update_comment(
-        owner=owner,
-        repo=repo,
-        comment_id=comment_id,
-        body=format_summary_body(summary, run_url=run_url),
-    )
 
 
 def format_summary_body(summary: Summary, run_url: str | None = None) -> str:
