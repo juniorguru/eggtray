@@ -7,7 +7,7 @@ from typing import Generator, Iterable
 
 import click
 import yaml
-from githubkit import BaseAuthStrategy, GitHub
+from githubkit import BaseAuthStrategy
 from jg.hen.core import check_profile_url
 from jg.hen.models import Summary
 
