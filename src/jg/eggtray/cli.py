@@ -7,13 +7,14 @@ from typing import Generator, Iterable
 
 import click
 import yaml
-from githubkit import BaseAuthStrategy
+from githubkit import BaseAuthStrategy, GitHub
 from jg.hen.core import check_profile_url
 from jg.hen.models import Summary
 
-from jg.eggtray.checks import process_check_issue
+from jg.eggtray.checks import check_profile
 from jg.eggtray.github_app import github_auth
-from jg.eggtray.models import Document, Profile, Response
+from jg.eggtray.models import Document, Listing, Profile
+from jg.eggtray.reports import report_profiles
 
 
 logger = logging.getLogger(__name__)
@@ -63,8 +64,8 @@ def build(
     profiles = list(create_profiles(documents, summaries))
 
     logger.info(f"Writing {len(profiles)} profiles to {output_path}")
-    response = Response.create(profiles)
-    output_path.write_text(response.model_dump_json(indent=2))
+    listing = Listing.create(profiles)
+    output_path.write_text(listing.model_dump_json(indent=2))
 
 
 def load_document(profile_path: Path) -> Document:
@@ -151,8 +152,65 @@ def check(
     logger.info(f"Processing issue #{issue_number}")
     owner, repo = owner_repo.split("/")
     logger.debug(f"GitHub repository: {owner}/{repo}")
+    if run_url := get_run_url(owner, repo, github_run_id):
+        logger.info(f"Working inside {run_url}")
     asyncio.run(
-        process_check_issue(
-            github_auth, owner, repo, issue_number, states=states, run_id=github_run_id
+        check_profile(
+            github_auth,
+            owner,
+            repo,
+            issue_number,
+            states=states,
+            run_url=run_url,
         )
     )
+
+
+@main.command()
+@click.argument(
+    "data_path",
+    default="output/profiles.json",
+    type=click.Path(exists=True, dir_okay=False, file_okay=True, path_type=Path),
+)
+@click.option(
+    "--repo", "owner_repo", default="juniorguru/eggtray", help="GitHub repository."
+)
+@click.option("--label", default="profile not ready", help="GitHub issue label.")
+@github_auth
+@click.option(
+    "--github-run-id",
+    envvar="GITHUB_RUN_ID",
+    type=int,
+    help="GitHub run ID. Relevant only inside GitHub Actions run.",
+)
+def report(
+    data_path: Path,
+    owner_repo: str,
+    label: str,
+    github_auth: BaseAuthStrategy,
+    github_run_id: int | None = None,
+):
+    logger.debug(f"Data path: {data_path}")
+    listing = Listing.model_validate_json(data_path.read_text())
+    not_ready_profiles = [profile for profile in listing.items if not profile.is_ready]
+    logger.debug(f"Profiles: {len(not_ready_profiles)}/{listing.count} not ready")
+    owner, repo = owner_repo.split("/")
+    logger.debug(f"GitHub repository: {owner}/{repo}")
+    if run_url := get_run_url(owner, repo, github_run_id):
+        logger.info(f"Working inside {run_url}")
+    asyncio.run(
+        report_profiles(
+            github_auth,
+            owner,
+            repo,
+            not_ready_profiles,
+            label=label,
+            run_url=run_url,
+        )
+    )
+
+
+def get_run_url(owner: str, repo: str, run_id: int | None = None) -> str | None:
+    if run_id:
+        return f"https://github.com/{owner}/{repo}/actions/runs/{run_id}"
+    return None

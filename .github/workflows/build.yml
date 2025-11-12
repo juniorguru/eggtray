@@ -41,6 +41,13 @@ jobs:
         env:
           GITHUB_API_KEY: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Report
+        run: uv run eggtray report
+        env:
+          GITHUB_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
+          GITHUB_INSTALLATION_ID: ${{ secrets.GH_INSTALLATION_ID }}
+          GITHUB_PRIVATE_KEY: ${{ secrets.GH_PRIVATE_KEY }}
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 

@@ -111,7 +111,7 @@ class Profile(BaseModel):
         )
 
 
-class Response(BaseModel):
+class Listing(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     count: int
