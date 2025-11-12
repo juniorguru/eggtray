@@ -56,6 +56,7 @@ class Profile(BaseModel):
     issues: list[Outcome]
     projects: list[ProjectInfo]
     is_ready: bool
+    report_url: str | None = None
 
     @classmethod
     def create(cls, document: Document, summary: Summary) -> Self:

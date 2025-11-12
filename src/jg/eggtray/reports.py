@@ -1,6 +1,7 @@
 import logging
 
 from githubkit import BaseAuthStrategy, GitHub
+from githubkit.versions.latest.models import Issue
 
 from jg.eggtray.checks import render_table
 from jg.eggtray.issues import (
@@ -22,22 +23,22 @@ async def report_profiles(
     profiles: list[Profile],
     label: str,
     run_url: str | None = None,
-) -> None:
+) -> list[Issue]:
+    issues = []
     async with GitHub(auth) as github:
         logger.info("Fetching existing report issues")
         issues = await fetch_report_issues(github, owner, repo, label=label)
         logger.info(f"Found {len(issues)} reports")
-        reports = {get_username(issue.title): issue for issue in issues}
-        logger.debug(f"Reports: {list(reports.keys())}")
+        issues_mapping = {get_username(issue.title): issue for issue in issues}
+        logger.debug(f"Reports: {list(issues_mapping.keys())}")
         for profile in profiles:
             logger.info(f"Processing {profile.github_url}")
             title = f"Profil @{profile.github_username} má nedostatky"
             body = format_body(profile, run_url=run_url)
-
-            if report := reports.get(profile.github_username):
-                logger.info(f"Updating issue {report.html_url}")
+            if issue := issues_mapping.get(profile.github_username):
+                logger.info(f"Updating issue {issue.html_url}")
                 await update_issue(
-                    github, owner, repo, report.number, title=title, body=body
+                    github, owner, repo, issue.number, title=title, body=body
                 )
             else:
                 logger.info(f"Creating issue for {profile.github_url}")
@@ -50,6 +51,8 @@ async def report_profiles(
                     labels=[label] if label else None,
                 )
                 logger.info(f"Issue: {issue.html_url}")
+            issues.append(issue)
+    return issues
 
 
 def format_body(profile: Profile, run_url: str | None = None) -> str:

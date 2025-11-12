@@ -198,7 +198,7 @@ def report(
     logger.debug(f"GitHub repository: {owner}/{repo}")
     if run_url := get_run_url(owner, repo, github_run_id):
         logger.info(f"Working inside {run_url}")
-    asyncio.run(
+    issues = asyncio.run(
         report_profiles(
             github_auth,
             owner,
@@ -208,6 +208,10 @@ def report(
             run_url=run_url,
         )
     )
+    for issue, profile in zip(issues, not_ready_profiles):
+        profile.report_url = issue.html_url
+    logger.info(f"Saving updated profiles to {data_path}")
+    data_path.write_text(listing.model_dump_json(indent=2))
 
 
 def get_run_url(owner: str, repo: str, run_id: int | None = None) -> str | None:
