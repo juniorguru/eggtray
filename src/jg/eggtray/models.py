@@ -4,7 +4,7 @@ from typing import Any, Self
 from jg.hen.models import Outcome, ProjectInfo, Status, Summary
 from pydantic import BaseModel, ConfigDict
 
-from jg.eggtray.enums import Experience, Language, School, Topic
+from jg.eggtray.enums import Experience, Language, School, Skill
 
 
 class Document(BaseModel):
@@ -18,7 +18,7 @@ class Document(BaseModel):
     looking_for: str | None = None
     email: str | None = None
     location: str | None = None
-    topics: set[Topic]
+    skills: set[Skill]
     domains: list[str] = []
     experience: set[Experience] = set()
     secondary_school: School | None
@@ -47,7 +47,7 @@ class Profile(BaseModel):
     github_username: str
     github_url: str
     linkedin_url: str | None
-    topics: set[Topic]
+    skills: set[Skill]
     domains: list[str]
     experience: set[Experience]
     secondary_school: School | None
@@ -99,7 +99,7 @@ class Profile(BaseModel):
             github_username=username,
             github_url=document.github_url,
             linkedin_url=summary.info.linkedin_url,
-            topics=document.topics,
+            skills=document.skills,
             domains=document.domains,
             experience=document.experience,
             secondary_school=document.secondary_school,

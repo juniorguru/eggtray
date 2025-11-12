@@ -17,7 +17,7 @@ class School(StrEnum):
 
 
 @unique
-class Topic(StrEnum):
+class Skill(StrEnum):
     # General areas
     backend = auto()
     frontend = auto()
