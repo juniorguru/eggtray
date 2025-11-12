@@ -23,7 +23,7 @@ jobs:
         run: uv sync
 
       - name: Check
-        run: uv run eggtray issue
+        run: uv run eggtray check
         env:
           GITHUB_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
           GITHUB_INSTALLATION_ID: ${{ secrets.GH_INSTALLATION_ID }}

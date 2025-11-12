@@ -11,8 +11,8 @@ from githubkit import BaseAuthStrategy
 from jg.hen.core import check_profile_url
 from jg.hen.models import Summary
 
+from jg.eggtray.checks import process_check_issue
 from jg.eggtray.github_app import github_auth
-from jg.eggtray.issue import process_issue
 from jg.eggtray.models import Document, Profile, Response
 
 
@@ -132,7 +132,7 @@ def create_profiles(
     type=int,
     help="GitHub run ID. Relevant only inside GitHub Actions run.",
 )
-def issue(
+def check(
     issue_number: int,
     owner_repo: str,
     states: list[str],
@@ -152,7 +152,7 @@ def issue(
     owner, repo = owner_repo.split("/")
     logger.debug(f"GitHub repository: {owner}/{repo}")
     asyncio.run(
-        process_issue(
+        process_check_issue(
             github_auth, owner, repo, issue_number, states=states, run_id=github_run_id
         )
     )

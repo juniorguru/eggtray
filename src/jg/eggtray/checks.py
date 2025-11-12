@@ -25,7 +25,7 @@ COLORS = {
 }
 
 
-async def process_issue(
+async def process_check_issue(
     auth: BaseAuthStrategy,
     owner: str,
     repo: str,
