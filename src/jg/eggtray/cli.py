@@ -208,8 +208,12 @@ def report(
             run_url=run_url,
         )
     )
+    updates = {}
     for issue, profile in zip(issues, not_ready_profiles):
-        profile.report_url = issue.html_url
+        updates[profile.github_username] = issue.html_url
+    logger.debug(f"Updates: {updates}")
+    for profile in listing.items:
+        profile.report_url = updates.get(profile.github_username)
     logger.info(f"Saving updated profiles to {data_path}")
     data_path.write_text(listing.model_dump_json(indent=2))
 

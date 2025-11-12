@@ -24,7 +24,7 @@ async def report_profiles(
     label: str,
     run_url: str | None = None,
 ) -> list[Issue]:
-    issues = []
+    reports = []
     async with GitHub(auth) as github:
         logger.info("Fetching existing report issues")
         issues = await fetch_report_issues(github, owner, repo, label=label)
@@ -51,8 +51,8 @@ async def report_profiles(
                     labels=[label] if label else None,
                 )
                 logger.info(f"Issue: {issue.html_url}")
-            issues.append(issue)
-    return issues
+            reports.append(issue)
+    return reports
 
 
 def format_body(profile: Profile, run_url: str | None = None) -> str:
