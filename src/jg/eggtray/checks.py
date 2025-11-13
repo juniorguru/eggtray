@@ -157,7 +157,7 @@ def format_summary_body(summary: Summary, run_url: str | None = None) -> str:
         )
         if is_ready(summary.outcomes):
             text += (
-                "Nevidím žádné zásadní nedostatky, takže si klidně můžeš hledat práci v oboru! 💪"
+                "Nevidím žádné zásadní nedostatky! Hledej si práci v oboru! 💪"
                 "Pokud to dokážeš, vytvoř si profil na [junior.guru/candidates](https://junior.guru/candidates/)!\n\n"
             )
         else:
