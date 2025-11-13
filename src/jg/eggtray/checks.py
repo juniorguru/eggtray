@@ -162,8 +162,8 @@ def format_summary_body(summary: Summary, run_url: str | None = None) -> str:
             )
         else:
             text += (
-                "Vidím zásadní nedostatky. Oprav si to, než si začneš hledat práci. Klidně si to tady pak znovu nech zkontrolovat. "
-                "Až bude vše OK, nezapomeň si vytvořit profil na [junior.guru/candidates](https://junior.guru/candidates/)!\n\n"
+                "Vidím zásadní nedostatky 🔴 Oprav si to, než si začneš hledat práci. Klidně si to tady pak znovu nech zkontrolovat. "
+                "Až to bude OK, nezapomeň si vytvořit profil na [junior.guru/candidates](https://junior.guru/candidates/)!\n\n"
             )
         text += render_table(summary.outcomes)
     text += (
