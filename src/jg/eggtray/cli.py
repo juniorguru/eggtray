@@ -3,6 +3,7 @@ import json
 import logging
 from operator import attrgetter
 from pathlib import Path
+from pprint import pformat
 from typing import Generator, Iterable
 
 import click
@@ -192,28 +193,27 @@ def report(
 ):
     logger.debug(f"Data path: {data_path}")
     listing = Listing.model_validate_json(data_path.read_text())
-    not_ready_profiles = [profile for profile in listing.items if not profile.is_ready]
-    logger.debug(f"Profiles: {len(not_ready_profiles)}/{listing.count} not ready")
+    logger.debug(f"Profiles loaded: {len(listing.items)}")
     owner, repo = owner_repo.split("/")
     logger.debug(f"GitHub repository: {owner}/{repo}")
     if run_url := get_run_url(owner, repo, github_run_id):
         logger.info(f"Working inside {run_url}")
-    issues = asyncio.run(
+    issues_by_username = asyncio.run(
         report_profiles(
             github_auth,
             owner,
             repo,
-            not_ready_profiles,
+            listing.items,
             label=label,
             run_url=run_url,
         )
     )
-    updates = {}
-    for issue, profile in zip(issues, not_ready_profiles):
-        updates[profile.github_username] = issue.html_url
-    logger.debug(f"Updates: {updates}")
+    issue_urls_by_username = {
+        username: issue.html_url for username, issue in issues_by_username.items()
+    }
+    logger.debug(f"Updates:\n{pformat(issue_urls_by_username)}")
     for profile in listing.items:
-        profile.report_url = updates.get(profile.github_username)
+        profile.report_url = issue_urls_by_username.get(profile.github_username)
     logger.info(f"Saving updated profiles to {data_path}")
     data_path.write_text(listing.model_dump_json(indent=2))
 
