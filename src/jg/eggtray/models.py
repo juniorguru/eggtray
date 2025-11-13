@@ -86,7 +86,6 @@ class Profile(BaseModel):
             ],
             key=attrgetter("priority"),
         )
-        is_ready = all(outcome.status != Status.ERROR for outcome in summary.outcomes)
 
         # Construct the profile, pay attention to priority of sources
         return cls(
@@ -108,7 +107,7 @@ class Profile(BaseModel):
             languages=document.languages,
             issues=issues,
             projects=projects,
-            is_ready=is_ready,
+            is_ready=is_ready(summary.outcomes),
         )
 
 
@@ -126,3 +125,7 @@ class Listing(BaseModel):
             items=profiles,
             item_schema=Profile.model_json_schema(),
         )
+
+
+def is_ready(outcomes: list[Outcome]) -> bool:
+    return all(outcome.status != Status.ERROR for outcome in outcomes)

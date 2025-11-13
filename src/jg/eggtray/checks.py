@@ -13,6 +13,7 @@ from jg.eggtray.issues import (
     post_comment,
     update_issue,
 )
+from jg.eggtray.models import is_ready
 
 
 logger = logging.getLogger(__name__)
@@ -154,6 +155,16 @@ def format_summary_body(summary: Summary, run_url: str | None = None) -> str:
             f"[github.com/{summary.username}](https://github.com/{summary.username}) "
             "a tady je moje zpětná vazba 🔬\n\n"
         )
+        if is_ready(summary.outcomes):
+            text += (
+                "Nevidím žádné zásadní nedostatky, takže si klidně můžeš hledat práci v oboru! 💪"
+                "Pokud to dokážeš, vytvoř si profil na [junior.guru/candidates](https://junior.guru/candidates/)!\n\n"
+            )
+        else:
+            text += (
+                "Vidím zásadní nedostatky. Oprav si to, než si začneš hledat práci. Klidně si to tady pak znovu nech zkontrolovat. "
+                "Až bude vše OK, nezapomeň si vytvořit profil na [junior.guru/candidates](https://junior.guru/candidates/)!\n\n"
+            )
         text += render_table(summary.outcomes)
     text += (
         "\n\n<details>\n\n"
