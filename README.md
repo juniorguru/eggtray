@@ -7,7 +7,9 @@ If you're looking for an entry level software engineering job, send a Pull Reque
 
 - Name of the file must be your GitHub username
 - The file must have the `.yml` extension
-- See existing files to learn about the format of the YAML document
+- See the YAML existing files, `models.py`, and `enums.py` to learn about the format of the YAML document
+- If your skills are missing in the `Skill` enum, feel free to add them
+- Members of the [junior.guru club](https://junior.guru/club/) can type `/discord_id` on Discord to get their Discord ID
 
 Once the PR gets accepted, Eggtray uses [Hen](https://github.com/juniorguru/hen) to inspect your GitHub profile. It merges the findings with data from the YAML file and creates a single data structure, which is then available in the API as your profile information.
 
