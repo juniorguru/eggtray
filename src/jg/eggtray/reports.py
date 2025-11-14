@@ -80,6 +80,8 @@ def format_body(profile: Profile, run_url: str | None = None) -> str:
         "[junior.guru/candidates](https://junior.guru/candidates/) "
         "bude upozaděn 💔"
         "\n\n"
+        "Každý den to znova zkontroluju a jakmile bude všechno v pořádku, "
+        "tak tohle issue zavřu."
     )
     text += render_table(profile.issues)
     if run_url:
