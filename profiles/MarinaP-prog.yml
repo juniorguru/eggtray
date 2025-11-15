@@ -1,8 +1,8 @@
-github_url: MarinaP-prog
-linkedin_url: https://www.linkedin.com/in/marina-pavolova/
 name: Marina Pavolová
+github: MarinaP-prog
 location: Kunice, Czech Republic
 email:  marina.larionova@centrum.cz
+linkedin: https://www.linkedin.com/in/marina-pavolova/
 languages:
   - cs
   - en
@@ -19,6 +19,5 @@ skills:
   - sql
 secondary_school: non_it
 university: null
-projects:  
-  - MarinaP-prog.github.io
 looking_for: Entry-level frontend, fullstack dev, or Salesforce Admin
+is_ready: True
