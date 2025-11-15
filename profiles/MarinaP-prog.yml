@@ -1,8 +1,6 @@
 name: Marina Pavolová
-github: MarinaP-prog
 location: Kunice, Czech Republic
-email:  marina.larionova@centrum.cz
-linkedin: https://www.linkedin.com/in/marina-pavolova/
+email: marina.larionova@centrum.cz
 languages:
   - cs
   - en
@@ -19,5 +17,4 @@ skills:
   - sql
 secondary_school: non_it
 university: null
-looking_for: Entry-level frontend, fullstack dev, or Salesforce Admin
-is_ready: True
+looking_for: Entry-level frontend, or Salesforce Admin
