@@ -82,6 +82,7 @@ def format_body(profile: Profile, run_url: str | None = None) -> str:
         "\n\n"
         "Každý den to znova zkontroluju a jakmile bude všechno v pořádku, "
         "tak tohle issue zavřu."
+        "\n\n"
     )
     text += render_table(profile.issues)
     if run_url:
