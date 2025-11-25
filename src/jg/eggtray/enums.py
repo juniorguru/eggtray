@@ -23,6 +23,7 @@ class Skill(StrEnum):
     frontend = auto()
     fullstack = auto()
     mobile = auto()
+    testing = auto()
 
     # Mobile technologies
     android = auto()
