@@ -1,9 +1,12 @@
-Discord ID: 765916367911780352 
-name: Veronika Ondrušová (roz. Obrtelová) 
-Location: Ostrava, Czech Republic  
-Email: [veronika.obrtelova@seznam.cz] 
-Domains: Quality Assurance
-Skills: 
+discord_id: 765916367911780352
+name: Veronika Ondrušová (roz. Obrtelová)
+location: Ostrava, Czech Republic
+email: veronika.obrtelova@seznam.cz
+
+domains:
+  - quality assurance
+
+skills:
   - Manual Testing
   - Automated Testing (Selenium)
   - Java
@@ -15,13 +18,13 @@ Skills:
   - SOAP UI
   - SQL
 
-Languages:
+languages:
   - cs
   - en
 
-Secondary school: non-IT  
-University: non-IT  
-LinkedIn: (https://www.linkedin.com/in/veronika-obrtelová/)  
-Osobní stránky: (https://veronikaobrtelova.netlify.app) 
-GitHub: (https://github.com/veronika181)
+secondary_school: non-IT
+university: non-IT
 
+linkedin: https://www.linkedin.com/in/veronika-obrtelová/
+personal_website: https://veronikaobrtelova.netlify.app
+github: https://github.com/veronika181
