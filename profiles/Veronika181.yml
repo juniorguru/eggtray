@@ -1,10 +1,26 @@
 discord_id: 765916367911780352
-skills:
-  - python
+name: Veronika Ondrušová (roz. Obrtelová)
+location: Ostrava, Czech Republic
+email: veronika.obrtelova@seznam.cz
+
 domains:
   - quality assurance
+
+skills:
+  - Manual Testing
+  - Automated Testing (Selenium)
+  - Java
+  - Postman
+  - HTML
+  - CSS
+  - JavaScript
+  - Kibana
+  - SOAP UI
+  - SQL
+
 languages:
   - cs
   - en
+
 secondary_school: non_it
 university: non_it
