@@ -82,7 +82,7 @@ class Profile(BaseModel):
             [
                 project
                 for project in summary.info.projects
-                if project.priority in [0, 1]
+                if project.priority is not None
             ],
             key=attrgetter("priority"),
         )
