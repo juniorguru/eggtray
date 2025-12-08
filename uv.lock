@@ -279,7 +279,7 @@ dev = [
 [[package]]
 name = "jg-hen"
 version = "0.0"
-source = { git = "https://github.com/juniorguru/hen.git#e5d58ddbc83ed9d3aa8334295f697cd524017613" }
+source = { git = "https://github.com/juniorguru/hen.git#1310cf999c733246246ccf4d8180b143b91df3cd" }
 dependencies = [
     { name = "blinker" },
     { name = "click" },
