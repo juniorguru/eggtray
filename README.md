@@ -9,7 +9,7 @@ If you're looking for an entry level software engineering job, send a Pull Reque
 - The file must have the `.yml` extension
 - See the YAML existing files, `models.py`, and `enums.py` to learn about the format of the YAML document
 - If your skills are missing in the `Skill` enum, feel free to add them
-- Members of the [junior.guru club](https://junior.guru/club/) can type `/discord_id` on Discord to get their Discord ID
+- Members of the [junior.guru club](https://junior.guru/club/) can use `/discord_id` on Discord to learn what's their Discord ID
 
 Once the PR gets accepted, Eggtray uses [Hen](https://github.com/juniorguru/hen) to inspect your GitHub profile. It merges the findings with data from the YAML file and creates a single data structure, which is then available in the API as your profile information.
 
@@ -26,6 +26,12 @@ The API has been created for the purpose of listing entry level candidates on [j
 
 > [!CAUTION]
 > As of now, the API is extremely **UNSTABLE**. There are no guarantees on schema of the response. Anything can and **will** change over night.
+
+## Regular profile checks
+
+Every night, each profile is reviewed. If the review uncovers any serious shortcomings, a GitHub issue labeled [profile not ready](https://github.com/juniorguru/eggtray/issues?q=is%3Aissue%20label%3A%22profile%20not%20ready%22) is created, listing the identified issues and notifying the profile owner. The profile is then demoted in the [junior.guru/candidates](https://junior.guru/candidates/) listing.
+
+Once the shortcomings are resolved, a subsequent nightly check automatically closes the issue, and after the junior.guru website updates, the profile is promoted in the juniors listing again.
 
 ## One-off profile checks
 
