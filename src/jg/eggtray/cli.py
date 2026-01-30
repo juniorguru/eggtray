@@ -14,7 +14,7 @@ from jg.hen.models import Summary
 
 from jg.eggtray.checks import check_profile
 from jg.eggtray.github_app import github_auth
-from jg.eggtray.models import Document, Listing, Profile
+from jg.eggtray.models import Listing, Profile, ProfileConfig
 from jg.eggtray.reports import report_profiles
 
 
@@ -23,68 +23,67 @@ logger = logging.getLogger(__name__)
 
 @click.group()
 @click.option("-d", "--debug", default=False, is_flag=True, help="Show debug logs.")
-def main(
-    debug: bool,
-):
+def main(debug: bool):
     logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
 
 
 @main.command()
 @click.argument(
-    "documents_dir",
+    "configs_dir",
     default="profiles",
     type=click.Path(exists=True, dir_okay=True, file_okay=False, path_type=Path),
 )
 @click.argument(
-    "output_path",
-    default="output/profiles.json",
-    type=click.Path(exists=False, dir_okay=False, file_okay=True, path_type=Path),
+    "output_dir",
+    default="output",
+    type=click.Path(exists=False, dir_okay=True, file_okay=False, path_type=Path),
 )
-@click.option("--github-api-key", envvar="GITHUB_API_KEY", help="GitHub API key.")
+@click.option("--github-api-key", envvar="GITHUB_API_KEY")
 def build(
-    documents_dir: Path,
-    output_path: Path,
+    configs_dir: Path,
+    output_dir: Path,
     github_api_key: str | None = None,
 ):
     logger.info(f"Using GitHub token: {'yes' if github_api_key else 'no'}")
-    logger.info(f"Output path: {output_path}")
-    output_path.parent.mkdir(parents=True, exist_ok=True)
+    logger.info(f"Output directory: {output_dir}")
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-    logger.info(f"Profile documents directory: {documents_dir}")
-    documents_paths = list(documents_dir.glob("*.yml"))
-    if not documents_paths:
-        logger.error("No profile documents found in the directory")
+    logger.info(f"Profile configs directory: {configs_dir}")
+    configs_paths = list(configs_dir.glob("*.yml"))
+    if not configs_paths:
+        logger.error("No profile configs found in the directory")
         raise click.Abort()
-    logger.info(f"Found {len(documents_paths)} profile documents")
-    documents = list(map(load_document, documents_paths))
+    logger.info(f"Found {len(configs_paths)} profile configs")
+    configs = list(map(load_profile_config, configs_paths))
 
     logger.info("Analyzing GitHub profiles")
-    summaries = asyncio.run(fetch_summaries(documents, github_api_key=github_api_key))
+    summaries = asyncio.run(fetch_summaries(configs, github_api_key=github_api_key))
 
     logger.info("Creating profiles")
-    profiles = list(create_profiles(documents, summaries))
+    profiles = list(create_profiles(configs, summaries))
 
-    logger.info(f"Writing {len(profiles)} profiles to {output_path}")
+    profiles_json_path = output_dir / "profiles.json"
+    logger.info(f"Writing {len(profiles)} profiles to {profiles_json_path}")
     listing = Listing.create(profiles)
-    output_path.write_text(listing.model_dump_json(indent=2))
+    profiles_json_path.write_text(listing.model_dump_json(indent=2))
 
 
-def load_document(profile_path: Path) -> Document:
-    return Document.create(
+def load_profile_config(profile_path: Path) -> ProfileConfig:
+    return ProfileConfig.create(
         profile_path.stem.lower(),
         yaml.safe_load(profile_path.read_text()),
     )
 
 
 async def fetch_summaries(
-    documents: Iterable[Document], github_api_key: str | None = None
+    configs: Iterable[ProfileConfig], github_api_key: str | None = None
 ) -> list[Summary]:
-    documents_mapping = {document.username: document for document in documents}
+    configs_mapping = {config.username: config for config in configs}
     tasks = [
         check_profile_url(
-            document.github_url, raise_on_error=True, github_api_key=github_api_key
+            config.github_url, raise_on_error=True, github_api_key=github_api_key
         )
-        for document in documents_mapping.values()
+        for config in configs_mapping.values()
     ]
     summaries = []
     for github_checking in asyncio.as_completed(tasks):
@@ -97,13 +96,13 @@ async def fetch_summaries(
 
 
 def create_profiles(
-    documents: Iterable[Document], summaries: Iterable[Summary]
+    configs: Iterable[ProfileConfig], summaries: Iterable[Summary]
 ) -> Generator[Profile, None, None]:
-    for document, github in zip(
-        sorted(documents, key=attrgetter("username")),
+    for config, github in zip(
+        sorted(configs, key=attrgetter("username")),
         sorted(summaries, key=attrgetter("username")),
     ):
-        yield Profile.create(document, github)
+        yield Profile.create(config, github)
 
 
 @main.command()

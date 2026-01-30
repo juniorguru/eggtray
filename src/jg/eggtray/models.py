@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict
 from jg.eggtray.enums import Experience, Language, School, Skill
 
 
-class Document(BaseModel):
+class ProfileConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     username: str
@@ -59,7 +59,7 @@ class Profile(BaseModel):
     report_url: str | None = None
 
     @classmethod
-    def create(cls, document: Document, summary: Summary) -> Self:
+    def create(cls, config: ProfileConfig, summary: Summary) -> Self:
         # Ensure it's a success summary
         if summary.error:
             raise ValueError("Summary contains an error")
@@ -67,7 +67,7 @@ class Profile(BaseModel):
             raise ValueError("Summary contains no info")
 
         # Ensure that the usernames match
-        usernames = [document.username, summary.username]
+        usernames = [config.username, summary.username]
         if len(set(usernames)) != 1:
             raise ValueError(f"Usernames do not match: {usernames!r}")
         username = usernames[0]
@@ -89,22 +89,22 @@ class Profile(BaseModel):
 
         # Construct the profile, pay attention to priority of sources
         return cls(
-            name=document.name or summary.info.name or username,
-            bio=document.bio or summary.info.bio,
-            looking_for=document.looking_for,
-            email=document.email or summary.info.email,
+            name=config.name or summary.info.name or username,
+            bio=config.bio or summary.info.bio,
+            looking_for=config.looking_for,
+            email=config.email or summary.info.email,
             avatar_url=summary.info.avatar_url,
-            location=document.location or summary.info.location,
-            discord_id=document.discord_id,
+            location=config.location or summary.info.location,
+            discord_id=config.discord_id,
             github_username=username,
-            github_url=document.github_url,
+            github_url=config.github_url,
             linkedin_url=summary.info.linkedin_url,
-            skills=document.skills,
-            domains=document.domains,
-            experience=document.experience,
-            secondary_school=document.secondary_school,
-            university=document.university,
-            languages=document.languages,
+            skills=config.skills,
+            domains=config.domains,
+            experience=config.experience,
+            secondary_school=config.secondary_school,
+            university=config.university,
+            languages=config.languages,
             issues=issues,
             projects=projects,
             is_ready=is_ready(summary.outcomes),

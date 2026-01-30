@@ -4,7 +4,7 @@ from typing import Any
 import pytest
 import yaml
 
-from jg.eggtray.models import Document
+from jg.eggtray.models import ProfileConfig
 
 
 PROFILES_DIR = Path(__file__).parent.parent / "profiles"
@@ -18,7 +18,7 @@ PROFILES_DIR = Path(__file__).parent.parent / "profiles"
     ],
 )
 def test_schema(username: str, data: dict[str, Any]):
-    Document.create(username, data)
+    ProfileConfig.create(username, data)
 
 
 def test_unique():
