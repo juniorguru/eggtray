@@ -5,13 +5,12 @@ from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
 from typing import AsyncGenerator, Generator
-from urllib.parse import urljoin
 
 import httpx
 from PIL import Image
+from playwright._impl._errors import Error as PlaywrightError
 from playwright.async_api import async_playwright
 from playwright.async_api._generated import Browser
-from playwright._impl._errors import Error as PlaywrightError
 from slugify import slugify
 
 from jg.eggtray.models import Profile, ProjectInfo
