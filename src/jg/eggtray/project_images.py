@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 import logging
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
@@ -149,7 +150,8 @@ async def try_screenshot(
 async def try_save(
     image_bytes: bytes, output_dir: Path, project_name: str
 ) -> Path | None:
-    image_path = output_dir / f"{slugify(project_name)}.webp"
+    name_hash = hashlib.sha1(project_name.encode("utf-8")).hexdigest()[:8]
+    image_path = output_dir / f"{slugify(project_name)}-{name_hash}.webp"
     try:
         image = Image.open(BytesIO(image_bytes))
 
