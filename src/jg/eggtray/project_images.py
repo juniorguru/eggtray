@@ -16,6 +16,9 @@ from slugify import slugify
 from jg.eggtray.models import Profile, ProjectInfo
 
 
+THUMBNAIL_SIZE = (1280, 800)
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -47,7 +50,7 @@ async def start_browser() -> AsyncGenerator[Browser | None, None]:
 
 
 async def download_project_images(
-    profiles: list[Profile], output_dir: Path, absolute_url: str
+    profiles: list[Profile], output_dir: Path
 ) -> list[tuple[ProjectInfo, Path]]:
     async with httpx.AsyncClient() as http_client, start_browser() as browser:
         tasks = [
@@ -142,9 +145,27 @@ async def try_screenshot(
 async def try_save(
     image_bytes: bytes, output_dir: Path, project_name: str
 ) -> Path | None:
+    image_path = output_dir / f"{slugify(project_name)}.webp"
     try:
         image = Image.open(BytesIO(image_bytes))
-        image_path = output_dir / f"{slugify(project_name)}.webp"
+
+        if image.format in ("PNG", "JPEG"):
+            image = image.convert("RGB")
+
+        target_ratio = THUMBNAIL_SIZE[0] / THUMBNAIL_SIZE[1]
+        current_ratio = image.width / image.height
+
+        if current_ratio > target_ratio:
+            # too wide → crop sides, centered
+            new_width = int(image.height * target_ratio)
+            left = (image.width - new_width) // 2
+            image = image.crop((left, 0, left + new_width, image.height))
+        elif current_ratio < target_ratio:
+            # too tall (screenshots) → crop from the top
+            new_height = int(image.width / target_ratio)
+            image = image.crop((0, 0, image.width, new_height))
+
+        image = image.resize(THUMBNAIL_SIZE, Image.Resampling.LANCZOS)
         image.save(
             image_path,
             format="WEBP",

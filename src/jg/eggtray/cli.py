@@ -93,6 +93,8 @@ def build(
     output_dir.mkdir(parents=True, exist_ok=True)
     project_images_dir = output_dir / project_images_dirname
     project_images_dir.mkdir(parents=True, exist_ok=True)
+    for path in project_images_dir.glob("*.webp"):
+        path.unlink()
 
     logger.debug(f"Cache: {cache_dir}")
     cache = Cache(cache_dir)
@@ -120,7 +122,7 @@ def build(
 
     logger.info("Adding project images")
     for project, image_path in obj.run_async(
-        download_project_images(profiles, project_images_dir, absolute_url)
+        download_project_images(profiles, project_images_dir)
     ):
         project.thumbnail_url = urljoin(
             absolute_url, image_path.relative_to(output_dir).as_posix()
