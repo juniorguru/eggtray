@@ -1,13 +1,13 @@
 import asyncio
-from io import BytesIO
 import logging
 from dataclasses import dataclass
+from io import BytesIO
 from pathlib import Path
 from typing import Generator
 
-from PIL import Image
 import httpx
 from jg.hen.models import ProjectInfo
+from PIL import Image
 from slugify import slugify
 
 from jg.eggtray.models import Profile
