@@ -122,7 +122,7 @@ async def try_screenshot(
     browser: Browser,
     url: str,
     timeout_s: float = 40.0,
-    min_bytes=10000,
+    min_bytes: int = 10000,
     width: int = 1280,
     height: int = 720,
 ) -> bytes | None:

@@ -50,7 +50,7 @@ def main(context: click.Context, debug: bool):
     obj = context.ensure_object(ContextObj)
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    obj.loop = asyncio.get_event_loop()
+    obj.loop = loop
     context.call_on_close(loop.close)
 
 

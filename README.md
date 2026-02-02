@@ -39,7 +39,7 @@ This repository also provides one-off GitHub profile checks as a service. File a
 
 ## Contributing to the software behind all this
 
-Use [uv](https://docs.astral.sh/uv/) to develop the API:
+Use [uv](https://docs.astral.sh/uv/) to develop the tool:
 
 1. `git clone` this repository.
 2. Run `uv run eggtray --help` to learn about what this tool can do. The `eggtray build` command does the main job of putting all the information together and creating the `profiles.json` file to the `output` directory.
