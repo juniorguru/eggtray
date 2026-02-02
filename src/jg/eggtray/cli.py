@@ -1,13 +1,16 @@
 import asyncio
 import json
 import logging
+from dataclasses import dataclass
 from operator import attrgetter
 from pathlib import Path
 from pprint import pformat
-from typing import Generator, Iterable
+from typing import Any, Coroutine, Generator, Iterable, TypeVar, cast
+from urllib.parse import urljoin
 
 import click
 import yaml
+from diskcache import Cache
 from githubkit import BaseAuthStrategy
 from jg.hen.core import check_profile_url
 from jg.hen.models import Summary
@@ -15,19 +18,44 @@ from jg.hen.models import Summary
 from jg.eggtray.checks import check_profile
 from jg.eggtray.github_app import github_auth
 from jg.eggtray.models import Listing, Profile, ProfileConfig
+from jg.eggtray.project_images import download_project_images
 from jg.eggtray.reports import report_profiles
+
+
+T = TypeVar("T")
 
 
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class ContextObj:
+    loop: asyncio.AbstractEventLoop | None = None
+
+    def run_async(self, coro: Coroutine[Any, Any, T]) -> T:
+        if not self.loop:
+            raise RuntimeError("Event loop not initialized")
+        return self.loop.run_until_complete(coro)
+
+
 @click.group()
 @click.option("-d", "--debug", default=False, is_flag=True, help="Show debug logs.")
-def main(debug: bool):
+@click.pass_context
+def main(context: click.Context, debug: bool):
     logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
+    logging.getLogger("httpx").setLevel(logging.WARNING if not debug else logging.INFO)
+    for logger_name in ["httpcore", "PIL"]:
+        logging.getLogger(logger_name).setLevel(logging.WARNING)
+
+    obj = context.ensure_object(ContextObj)
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    obj.loop = loop
+    context.call_on_close(loop.close)
 
 
 @main.command()
+@click.pass_obj
 @click.argument(
     "configs_dir",
     default="profiles",
@@ -38,31 +66,70 @@ def main(debug: bool):
     default="output",
     type=click.Path(exists=False, dir_okay=True, file_okay=False, path_type=Path),
 )
+@click.option("--json-filename", default="profiles.json")
+@click.option("--project-images-dirname", default="projects")
+@click.option(
+    "--cache-dir",
+    default=".cache",
+    type=click.Path(dir_okay=True, file_okay=False, path_type=Path),
+)
+@click.option("--cache-hours", default=3, type=int)
+@click.option("--absolute-url", default="https://juniorguru.github.io/eggtray/")
 @click.option("--github-api-key", envvar="GITHUB_API_KEY")
 def build(
+    obj: ContextObj,
     configs_dir: Path,
     output_dir: Path,
+    json_filename: str,
+    project_images_dirname: str,
+    cache_dir: Path,
+    cache_hours: int,
+    absolute_url: str,
     github_api_key: str | None = None,
 ):
     logger.info(f"Using GitHub token: {'yes' if github_api_key else 'no'}")
-    logger.info(f"Output directory: {output_dir}")
+
+    logger.info(f"Preparing output directory: {output_dir}")
     output_dir.mkdir(parents=True, exist_ok=True)
+    project_images_dir = output_dir / project_images_dirname
+    project_images_dir.mkdir(parents=True, exist_ok=True)
+    for path in project_images_dir.glob("*.webp"):
+        path.unlink()
+
+    logger.debug(f"Cache: {cache_dir}")
+    cache = Cache(cache_dir)
 
     logger.info(f"Profile configs directory: {configs_dir}")
-    configs_paths = list(configs_dir.glob("*.yml"))
+    configs_paths = sorted(configs_dir.glob("*.yml"))
     if not configs_paths:
         logger.error("No profile configs found in the directory")
         raise click.Abort()
     logger.info(f"Found {len(configs_paths)} profile configs")
     configs = list(map(load_profile_config, configs_paths))
 
-    logger.info("Analyzing GitHub profiles")
-    summaries = asyncio.run(fetch_summaries(configs, github_api_key=github_api_key))
+    cache_key = get_cache_key(configs)
+    if summaries := cast(list[Summary], cache.get(cache_key)):
+        logger.warning("Using cached summaries of GitHub profiles")
+    else:
+        logger.info("Analyzing GitHub profiles")
+        summaries = obj.run_async(
+            fetch_summaries(configs, github_api_key=github_api_key)
+        )
+        cache.set(cache_key, summaries, expire=cache_hours * 3600)
 
     logger.info("Creating profiles")
     profiles = list(create_profiles(configs, summaries))
 
-    profiles_json_path = output_dir / "profiles.json"
+    logger.info("Adding project images")
+    for project, image_path in obj.run_async(
+        download_project_images(profiles, project_images_dir)
+    ):
+        project.thumbnail_url = urljoin(
+            f"{absolute_url.rstrip('/')}/",
+            image_path.relative_to(output_dir).as_posix(),
+        )
+
+    profiles_json_path = output_dir / json_filename
     logger.info(f"Writing {len(profiles)} profiles to {profiles_json_path}")
     listing = Listing.create(profiles)
     profiles_json_path.write_text(listing.model_dump_json(indent=2))
@@ -73,6 +140,10 @@ def load_profile_config(profile_path: Path) -> ProfileConfig:
         profile_path.stem.lower(),
         yaml.safe_load(profile_path.read_text()),
     )
+
+
+def get_cache_key(configs: Iterable[ProfileConfig]) -> str:
+    return "|".join(sorted(config.username.lower() for config in configs))
 
 
 async def fetch_summaries(
@@ -106,6 +177,7 @@ def create_profiles(
 
 
 @main.command()
+@click.pass_obj
 @click.argument("issue_number", type=int, required=False)
 @click.option(
     "--repo", "owner_repo", default="juniorguru/eggtray", help="GitHub repository."
@@ -134,6 +206,7 @@ def create_profiles(
     help="GitHub run ID. Relevant only inside GitHub Actions run.",
 )
 def check(
+    obj: ContextObj,
     issue_number: int,
     owner_repo: str,
     states: list[str],
@@ -154,7 +227,7 @@ def check(
     logger.debug(f"GitHub repository: {owner}/{repo}")
     if run_url := get_run_url(owner, repo, github_run_id):
         logger.info(f"Working inside {run_url}")
-    asyncio.run(
+    obj.run_async(
         check_profile(
             github_auth,
             owner,
@@ -167,6 +240,7 @@ def check(
 
 
 @main.command()
+@click.pass_obj
 @click.argument(
     "data_path",
     default="output/profiles.json",
@@ -184,6 +258,7 @@ def check(
     help="GitHub run ID. Relevant only inside GitHub Actions run.",
 )
 def report(
+    obj: ContextObj,
     data_path: Path,
     owner_repo: str,
     label: str,
@@ -197,7 +272,7 @@ def report(
     logger.debug(f"GitHub repository: {owner}/{repo}")
     if run_url := get_run_url(owner, repo, github_run_id):
         logger.info(f"Working inside {run_url}")
-    issues_by_username = asyncio.run(
+    issues_by_username = obj.run_async(
         report_profiles(
             github_auth,
             owner,
