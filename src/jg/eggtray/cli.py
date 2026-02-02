@@ -1,11 +1,11 @@
 import asyncio
-from dataclasses import dataclass
 import json
 import logging
+from dataclasses import dataclass
 from operator import attrgetter
 from pathlib import Path
 from pprint import pformat
-from typing import Generator, Iterable, TypedDict, cast
+from typing import Generator, Iterable, cast
 
 import click
 import yaml
