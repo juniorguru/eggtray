@@ -17,6 +17,7 @@ from jg.hen.models import Summary
 from jg.eggtray.checks import check_profile
 from jg.eggtray.github_app import github_auth
 from jg.eggtray.models import Listing, Profile, ProfileConfig
+from jg.eggtray.project_images import create_project_images
 from jg.eggtray.reports import report_profiles
 
 
@@ -41,6 +42,7 @@ class ContextObj:
 @click.pass_context
 def main(context: click.Context, debug: bool):
     logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
+    logging.getLogger("httpx").setLevel(logging.WARNING if not debug else logging.INFO)
 
     obj = context.ensure_object(ContextObj)
     loop = asyncio.new_event_loop()
@@ -61,6 +63,8 @@ def main(context: click.Context, debug: bool):
     default="output",
     type=click.Path(exists=False, dir_okay=True, file_okay=False, path_type=Path),
 )
+@click.option("--json-filename", default="profiles.json")
+@click.option("--project-images-dirname", default="projects")
 @click.option(
     "--cache-dir",
     default=".cache",
@@ -72,13 +76,18 @@ def build(
     obj: ContextObj,
     configs_dir: Path,
     output_dir: Path,
+    json_filename: str,
+    project_images_dirname: str,
     cache_dir: Path,
     cache_hours: int,
     github_api_key: str | None = None,
 ):
     logger.info(f"Using GitHub token: {'yes' if github_api_key else 'no'}")
-    logger.info(f"Output directory: {output_dir}")
+
+    logger.info(f"Preparing output directory: {output_dir}")
     output_dir.mkdir(parents=True, exist_ok=True)
+    project_images_dir = output_dir / project_images_dirname
+    project_images_dir.mkdir(parents=True, exist_ok=True)
 
     logger.debug(f"Cache: {cache_dir}")
     cache = Cache(cache_dir)
@@ -104,7 +113,14 @@ def build(
     logger.info("Creating profiles")
     profiles = list(create_profiles(configs, summaries))
 
-    profiles_json_path = output_dir / "profiles.json"
+    logger.info("Creating project images")
+    obj.run_async(
+        create_project_images(
+            profiles, project_images_dir, github_api_key=github_api_key
+        )
+    )
+
+    profiles_json_path = output_dir / json_filename
     logger.info(f"Writing {len(profiles)} profiles to {profiles_json_path}")
     listing = Listing.create(profiles)
     profiles_json_path.write_text(listing.model_dump_json(indent=2))
