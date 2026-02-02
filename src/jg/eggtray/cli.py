@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from operator import attrgetter
 from pathlib import Path
 from pprint import pformat
-from typing import Generator, Iterable, cast
+from typing import Any, Coroutine, Generator, Iterable, TypeVar, cast
 
 import click
 import yaml
@@ -20,12 +20,20 @@ from jg.eggtray.models import Listing, Profile, ProfileConfig
 from jg.eggtray.reports import report_profiles
 
 
+T = TypeVar("T")
+
+
 logger = logging.getLogger(__name__)
 
 
 @dataclass
-class AppState:
+class ContextObj:
     loop: asyncio.AbstractEventLoop | None = None
+
+    def run_async(self, coro: Coroutine[Any, Any, T]) -> T:
+        if not self.loop:
+            raise RuntimeError("Event loop not initialized")
+        return self.loop.run_until_complete(coro)
 
 
 @click.group()
@@ -34,7 +42,7 @@ class AppState:
 def main(context: click.Context, debug: bool):
     logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
 
-    obj = context.ensure_object(AppState)
+    obj = context.ensure_object(ContextObj)
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     obj.loop = asyncio.get_event_loop()
@@ -61,7 +69,7 @@ def main(context: click.Context, debug: bool):
 @click.option("--cache-hours", default=3, type=int)
 @click.option("--github-api-key", envvar="GITHUB_API_KEY")
 def build(
-    obj: AppState,
+    obj: ContextObj,
     configs_dir: Path,
     output_dir: Path,
     cache_dir: Path,
@@ -88,8 +96,7 @@ def build(
         logger.warning("Using cached summaries of GitHub profiles")
     else:
         logger.info("Analyzing GitHub profiles")
-        assert obj.loop is not None
-        summaries = obj.loop.run_until_complete(
+        summaries = obj.run_async(
             fetch_summaries(configs, github_api_key=github_api_key)
         )
         cache.set(cache_key, summaries, expire=cache_hours * 3600)
@@ -145,6 +152,7 @@ def create_profiles(
 
 
 @main.command()
+@click.pass_obj
 @click.argument("issue_number", type=int, required=False)
 @click.option(
     "--repo", "owner_repo", default="juniorguru/eggtray", help="GitHub repository."
@@ -173,6 +181,7 @@ def create_profiles(
     help="GitHub run ID. Relevant only inside GitHub Actions run.",
 )
 def check(
+    obj: ContextObj,
     issue_number: int,
     owner_repo: str,
     states: list[str],
@@ -193,7 +202,7 @@ def check(
     logger.debug(f"GitHub repository: {owner}/{repo}")
     if run_url := get_run_url(owner, repo, github_run_id):
         logger.info(f"Working inside {run_url}")
-    asyncio.run(
+    obj.run_async(
         check_profile(
             github_auth,
             owner,
@@ -206,6 +215,7 @@ def check(
 
 
 @main.command()
+@click.pass_obj
 @click.argument(
     "data_path",
     default="output/profiles.json",
@@ -223,6 +233,7 @@ def check(
     help="GitHub run ID. Relevant only inside GitHub Actions run.",
 )
 def report(
+    obj: ContextObj,
     data_path: Path,
     owner_repo: str,
     label: str,
@@ -236,7 +247,7 @@ def report(
     logger.debug(f"GitHub repository: {owner}/{repo}")
     if run_url := get_run_url(owner, repo, github_run_id):
         logger.info(f"Working inside {run_url}")
-    issues_by_username = asyncio.run(
+    issues_by_username = obj.run_async(
         report_profiles(
             github_auth,
             owner,
