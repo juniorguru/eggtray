@@ -43,6 +43,8 @@ class ContextObj:
 def main(context: click.Context, debug: bool):
     logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
     logging.getLogger("httpx").setLevel(logging.WARNING if not debug else logging.INFO)
+    for logger_name in ["httpcore", "PIL"]:
+        logging.getLogger(logger_name).setLevel(logging.WARNING)
 
     obj = context.ensure_object(ContextObj)
     loop = asyncio.new_event_loop()
@@ -114,11 +116,7 @@ def build(
     profiles = list(create_profiles(configs, summaries))
 
     logger.info("Creating project images")
-    obj.run_async(
-        create_project_images(
-            profiles, project_images_dir, github_api_key=github_api_key
-        )
-    )
+    obj.run_async(create_project_images(profiles, project_images_dir))
 
     profiles_json_path = output_dir / json_filename
     logger.info(f"Writing {len(profiles)} profiles to {profiles_json_path}")

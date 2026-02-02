@@ -260,8 +260,10 @@ dependencies = [
     { name = "githubkit", extra = ["auth-app"] },
     { name = "httpx" },
     { name = "jg-hen" },
+    { name = "pillow" },
     { name = "pycountry" },
     { name = "pydantic" },
+    { name = "python-slugify" },
     { name = "pyyaml" },
 ]
 
@@ -279,8 +281,10 @@ requires-dist = [
     { name = "githubkit", extras = ["auth-app"], specifier = ">=0.12.9" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "jg-hen", git = "https://github.com/juniorguru/hen.git" },
+    { name = "pillow", specifier = ">=12.1.0" },
     { name = "pycountry", specifier = ">=24.6.1" },
     { name = "pydantic", specifier = ">=2.12.3" },
+    { name = "python-slugify", specifier = ">=8.0.4" },
     { name = "pyyaml", specifier = ">=6.0.2" },
 ]
 

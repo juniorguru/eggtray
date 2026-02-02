@@ -1,18 +1,24 @@
 import asyncio
+from io import BytesIO
 import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Generator
 
+from PIL import Image
 import httpx
 from jg.hen.models import ProjectInfo
+from slugify import slugify
 
 from jg.eggtray.models import Profile
 
 
 logger = logging.getLogger(__name__)
 
-limit = asyncio.Semaphore(5)
+
+_downloads_limit = asyncio.Semaphore(5)
+
+_screenshots_limit = asyncio.Semaphore(2)  # TODO
 
 
 @dataclass
@@ -22,16 +28,10 @@ class ImageRequest:
     screenshot: bool = False
 
 
-async def create_project_images(
-    profiles: list[Profile], output_dir: Path, github_api_key: str | None = None
-):
+async def create_project_images(profiles: list[Profile], output_dir: Path):
     async with httpx.AsyncClient() as client:
         tasks = [
-            asyncio.create_task(
-                create_project_image(
-                    client, project, output_dir, github_api_key=github_api_key
-                )
-            )
+            asyncio.create_task(create_project_image(client, project, output_dir))
             for profile in profiles
             for project in profile.projects
         ]
@@ -42,7 +42,6 @@ async def create_project_image(
     client: httpx.AsyncClient,
     project: ProjectInfo,
     output_dir: Path,
-    github_api_key: str | None = None,
 ) -> None:
     for attempt_no, image_request in enumerate(
         collect_image_requests(project), start=1
@@ -50,14 +49,14 @@ async def create_project_image(
         logger.info(
             f"Attempt #{attempt_no} to download image for {project.name}: {image_request.url}"
         )
-        if image_bytes := await try_download(
-            client, image_request.url, github_api_key=github_api_key
+        if (image_bytes := await try_download(client, image_request.url)) and (
+            image_path := await try_save(image_bytes, output_dir, project.name)
         ):
-            # TODO save image_bytes to output_dir with appropriate filename
             logger.info(
-                f"Downloaded image for project {project.name} from {image_request.url}"
+                f"Downloaded image for project {project.name} from {image_request.url}, "
+                f"saved to {image_path.relative_to(output_dir)}"
             )
-            break
+            return
 
 
 def collect_image_requests(project: ProjectInfo) -> Generator[ImageRequest, None, None]:
@@ -67,26 +66,38 @@ def collect_image_requests(project: ProjectInfo) -> Generator[ImageRequest, None
         yield ImageRequest(project_name=project.name, url=demo_url, screenshot=True)
 
 
-def is_private_github_url(url: str) -> bool:
-    return url.startswith("https://private-user-images.githubusercontent.com/")
-
-
-async def try_download(
-    client: httpx.AsyncClient, url: str, github_api_key: str | None = None
-) -> bytes | None:
-    headers = {}
-    if github_api_key and is_private_github_url(url):
-        headers["Authorization"] = f"Bearer {github_api_key}"
+async def try_download(client: httpx.AsyncClient, url: str) -> bytes | None:
     try:
-        async with limit:
+        async with _downloads_limit:
             response = await client.get(
                 url,
-                headers=headers,
                 follow_redirects=True,
                 timeout=10.0,
             )
         response.raise_for_status()
+        content_type = response.headers.get("Content-Type", "")
+        logger.debug(f"Downloaded {content_type!r} from {url}")
         return response.content
     except Exception as e:
         logger.debug(f"Error while downloading {url}: {e}")
+        return None
+
+
+async def try_save(
+    image_bytes: bytes, output_dir: Path, project_name: str
+) -> Path | None:
+    try:
+        image = Image.open(BytesIO(image_bytes))
+        image_path = output_dir / f"{slugify(project_name)}.webp"
+        image.save(
+            image_path,
+            format="WEBP",
+            optimize=True,
+            quality=80,
+            method=6,
+            lossless=False,
+        )
+        return image_path
+    except Exception as e:
+        logger.debug(f"Error while saving image for {project_name}: {e}")
         return None
