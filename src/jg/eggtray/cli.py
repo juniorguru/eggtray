@@ -6,6 +6,7 @@ from operator import attrgetter
 from pathlib import Path
 from pprint import pformat
 from typing import Any, Coroutine, Generator, Iterable, TypeVar, cast
+from urllib.parse import urljoin
 
 import click
 import yaml
@@ -17,7 +18,7 @@ from jg.hen.models import Summary
 from jg.eggtray.checks import check_profile
 from jg.eggtray.github_app import github_auth
 from jg.eggtray.models import Listing, Profile, ProfileConfig
-from jg.eggtray.project_images import create_project_images
+from jg.eggtray.project_images import download_project_images
 from jg.eggtray.reports import report_profiles
 
 
@@ -73,6 +74,7 @@ def main(context: click.Context, debug: bool):
     type=click.Path(dir_okay=True, file_okay=False, path_type=Path),
 )
 @click.option("--cache-hours", default=3, type=int)
+@click.option("--absolute-url", default="https://juniorguru.github.io/eggtray/")
 @click.option("--github-api-key", envvar="GITHUB_API_KEY")
 def build(
     obj: ContextObj,
@@ -82,6 +84,7 @@ def build(
     project_images_dirname: str,
     cache_dir: Path,
     cache_hours: int,
+    absolute_url: str,
     github_api_key: str | None = None,
 ):
     logger.info(f"Using GitHub token: {'yes' if github_api_key else 'no'}")
@@ -115,8 +118,13 @@ def build(
     logger.info("Creating profiles")
     profiles = list(create_profiles(configs, summaries))
 
-    logger.info("Creating project images")
-    obj.run_async(create_project_images(profiles, project_images_dir))
+    logger.info("Adding project images")
+    for project, image_path in obj.run_async(
+        download_project_images(profiles, project_images_dir, absolute_url)
+    ):
+        project.thumbnail_url = urljoin(
+            absolute_url, image_path.relative_to(output_dir).as_posix()
+        )
 
     profiles_json_path = output_dir / json_filename
     logger.info(f"Writing {len(profiles)} profiles to {profiles_json_path}")

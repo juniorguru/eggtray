@@ -37,5 +37,14 @@ Once the shortcomings are resolved, a subsequent nightly check automatically clo
 
 This repository also provides one-off GitHub profile checks as a service. File a [new issue with the check template](https://github.com/juniorguru/eggtray/issues/new?template=check.md), and a bot will review your profile. You'll see the results in the comments under the issue. Once the check is done, the bot closes the issue.
 
+## Contributing to the software behind all this
+
+Use [uv](https://docs.astral.sh/uv/) to develop the API:
+
+1. `git clone` this repository.
+2. Run `uv run eggtray --help` to learn about what this tool can do. The `eggtray build` command does the main job of putting all the information together and creating the `profiles.json` file to the `output` directory.
+3. If you want the `eggtray build` command to take screenshots, run `uv run playwright install chromium`.
+4. Run `uv run pytest` to run tests or `uv run ruff` to check and format the code.
+
 ## License
 [AGPL-3.0-only](LICENSE), copyright (c) 2025 Jan Javorek, and contributors.

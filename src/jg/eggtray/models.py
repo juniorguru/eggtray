@@ -1,7 +1,7 @@
 from operator import attrgetter
 from typing import Any, Self
 
-from jg.hen.models import Outcome, ProjectInfo, Status, Summary
+from jg.hen.models import Outcome, ProjectInfo as BaseProjectInfo, Status, Summary
 from pydantic import BaseModel, ConfigDict
 
 from jg.eggtray.enums import Experience, Language, School, Skill
@@ -32,6 +32,10 @@ class ProfileConfig(BaseModel):
             github_url=f"https://github.com/{username}",
             **yaml_data,
         )
+
+
+class ProjectInfo(BaseProjectInfo):
+    thumbnail_url: str | None = None
 
 
 class Profile(BaseModel):
@@ -80,7 +84,7 @@ class Profile(BaseModel):
         ]
         projects = sorted(
             [
-                project
+                ProjectInfo(**project.model_dump())
                 for project in summary.info.projects
                 if project.priority is not None
             ],
