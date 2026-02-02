@@ -34,7 +34,7 @@ jobs:
         run: uv sync
 
       - name: Install browser
-        run: uv run playwright install chromium
+        run: uv run playwright install chromium --with-deps
 
       - name: Test
         run: uv run pytest

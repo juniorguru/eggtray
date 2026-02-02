@@ -125,7 +125,8 @@ def build(
         download_project_images(profiles, project_images_dir)
     ):
         project.thumbnail_url = urljoin(
-            absolute_url, image_path.relative_to(output_dir).as_posix()
+            f"{absolute_url.rstrip('/')}/",
+            image_path.relative_to(output_dir).as_posix(),
         )
 
     profiles_json_path = output_dir / json_filename

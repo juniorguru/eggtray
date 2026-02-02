@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 _downloads_limit = asyncio.Semaphore(5)
 
-_screenshots_limit = asyncio.Semaphore(2)  # TODO
+_screenshots_limit = asyncio.Semaphore(2)
 
 
 @dataclass
@@ -76,8 +76,12 @@ async def download_project_image(
             f"Attempt {attempt_no}/{len(image_requests)} to get an image for {project.name}: "
             f"{image_request.url} ({'image' if not image_request.screenshot else 'screenshot'})"
         )
-        if image_request.screenshot and browser:
-            image_bytes = await try_screenshot(browser, image_request.url)
+        if image_request.screenshot:
+            if browser:
+                image_bytes = await try_screenshot(browser, image_request.url)
+            else:
+                logger.warning("No browser, skipping screenshot")
+                image_bytes = None
         else:
             image_bytes = await try_download(http_client, image_request.url)
 
