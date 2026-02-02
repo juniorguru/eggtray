@@ -1,16 +1,15 @@
 import asyncio
-from contextlib import contextmanager
-import hashlib
+from dataclasses import dataclass
 import json
 import logging
 from operator import attrgetter
 from pathlib import Path
 from pprint import pformat
-from typing import Generator, Iterable, cast
+from typing import Generator, Iterable, TypedDict, cast
 
 import click
-from diskcache import Cache
 import yaml
+from diskcache import Cache
 from githubkit import BaseAuthStrategy
 from jg.hen.core import check_profile_url
 from jg.hen.models import Summary
@@ -24,22 +23,26 @@ from jg.eggtray.reports import report_profiles
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class AppState:
+    loop: asyncio.AbstractEventLoop | None = None
+
+
 @click.group()
 @click.option("-d", "--debug", default=False, is_flag=True, help="Show debug logs.")
-def main(debug: bool):
+@click.pass_context
+def main(context: click.Context, debug: bool):
     logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
 
-
-@contextmanager
-def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
+    obj = context.ensure_object(AppState)
     loop = asyncio.new_event_loop()
-    try:
-        yield loop
-    finally:
-        loop.close()
+    asyncio.set_event_loop(loop)
+    obj.loop = asyncio.get_event_loop()
+    context.call_on_close(loop.close)
 
 
 @main.command()
+@click.pass_obj
 @click.argument(
     "configs_dir",
     default="profiles",
@@ -58,6 +61,7 @@ def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
 @click.option("--cache-hours", default=3, type=int)
 @click.option("--github-api-key", envvar="GITHUB_API_KEY")
 def build(
+    obj: AppState,
     configs_dir: Path,
     output_dir: Path,
     cache_dir: Path,
@@ -79,19 +83,19 @@ def build(
     logger.info(f"Found {len(configs_paths)} profile configs")
     configs = list(map(load_profile_config, configs_paths))
 
-    with event_loop() as loop:
-        cache_key = get_cache_key(configs)
-        if summaries := cast(list[Summary], cache.get(cache_key)):
-            logger.warning("Using cached summaries of GitHub profiles")
-        else:
-            logger.info("Analyzing GitHub profiles")
-            summaries = loop.run_until_complete(
-                fetch_summaries(configs, github_api_key=github_api_key)
-            )
-            cache.set(cache_key, summaries, expire=cache_hours * 3600)
+    cache_key = get_cache_key(configs)
+    if summaries := cast(list[Summary], cache.get(cache_key)):
+        logger.warning("Using cached summaries of GitHub profiles")
+    else:
+        logger.info("Analyzing GitHub profiles")
+        assert obj.loop is not None
+        summaries = obj.loop.run_until_complete(
+            fetch_summaries(configs, github_api_key=github_api_key)
+        )
+        cache.set(cache_key, summaries, expire=cache_hours * 3600)
 
-        logger.info("Creating profiles")
-        profiles = list(create_profiles(configs, summaries))
+    logger.info("Creating profiles")
+    profiles = list(create_profiles(configs, summaries))
 
     profiles_json_path = output_dir / "profiles.json"
     logger.info(f"Writing {len(profiles)} profiles to {profiles_json_path}")
