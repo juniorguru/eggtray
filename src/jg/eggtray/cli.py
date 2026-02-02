@@ -1,12 +1,15 @@
 import asyncio
+from contextlib import contextmanager
+import hashlib
 import json
 import logging
 from operator import attrgetter
 from pathlib import Path
 from pprint import pformat
-from typing import Generator, Iterable
+from typing import Generator, Iterable, cast
 
 import click
+from diskcache import Cache
 import yaml
 from githubkit import BaseAuthStrategy
 from jg.hen.core import check_profile_url
@@ -27,6 +30,15 @@ def main(debug: bool):
     logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
 
 
+@contextmanager
+def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
+    loop = asyncio.new_event_loop()
+    try:
+        yield loop
+    finally:
+        loop.close()
+
+
 @main.command()
 @click.argument(
     "configs_dir",
@@ -38,29 +50,48 @@ def main(debug: bool):
     default="output",
     type=click.Path(exists=False, dir_okay=True, file_okay=False, path_type=Path),
 )
+@click.option(
+    "--cache-dir",
+    default=".cache",
+    type=click.Path(dir_okay=True, file_okay=False, path_type=Path),
+)
+@click.option("--cache-hours", default=3, type=int)
 @click.option("--github-api-key", envvar="GITHUB_API_KEY")
 def build(
     configs_dir: Path,
     output_dir: Path,
+    cache_dir: Path,
+    cache_hours: int,
     github_api_key: str | None = None,
 ):
     logger.info(f"Using GitHub token: {'yes' if github_api_key else 'no'}")
     logger.info(f"Output directory: {output_dir}")
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    logger.debug(f"Cache: {cache_dir}")
+    cache = Cache(cache_dir)
+
     logger.info(f"Profile configs directory: {configs_dir}")
-    configs_paths = list(configs_dir.glob("*.yml"))
+    configs_paths = sorted(configs_dir.glob("*.yml"))
     if not configs_paths:
         logger.error("No profile configs found in the directory")
         raise click.Abort()
     logger.info(f"Found {len(configs_paths)} profile configs")
     configs = list(map(load_profile_config, configs_paths))
 
-    logger.info("Analyzing GitHub profiles")
-    summaries = asyncio.run(fetch_summaries(configs, github_api_key=github_api_key))
+    with event_loop() as loop:
+        cache_key = get_cache_key(configs)
+        if summaries := cast(list[Summary], cache.get(cache_key)):
+            logger.warning("Using cached summaries of GitHub profiles")
+        else:
+            logger.info("Analyzing GitHub profiles")
+            summaries = loop.run_until_complete(
+                fetch_summaries(configs, github_api_key=github_api_key)
+            )
+            cache.set(cache_key, summaries, expire=cache_hours * 3600)
 
-    logger.info("Creating profiles")
-    profiles = list(create_profiles(configs, summaries))
+        logger.info("Creating profiles")
+        profiles = list(create_profiles(configs, summaries))
 
     profiles_json_path = output_dir / "profiles.json"
     logger.info(f"Writing {len(profiles)} profiles to {profiles_json_path}")
@@ -73,6 +104,10 @@ def load_profile_config(profile_path: Path) -> ProfileConfig:
         profile_path.stem.lower(),
         yaml.safe_load(profile_path.read_text()),
     )
+
+
+def get_cache_key(configs: Iterable[ProfileConfig]) -> str:
+    return "|".join(sorted(config.username.lower() for config in configs))
 
 
 async def fetch_summaries(
