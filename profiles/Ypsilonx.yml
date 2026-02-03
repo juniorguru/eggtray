@@ -1,0 +1,24 @@
+# Vyplň údaje, které chceš sdílet. Pouze discord_id je povinné!
+# Ostatní pole můžeš smazat, pokud je nechceš vyplnit.
+
+discord_id: 311947085278740480
+
+# Volitelná pole:
+name: Tomáš Cibulec
+location: Valašské Meziříčí, Czech Republic
+email: cibulect@seznam.cz
+skills: # seznam dovedností
+  - python, rust, C++, VBS, ...
+  - backend (rád vytvářím logiku aplikací)
+  - git
+  - atd...
+domains: # oblasti zkušeností
+  - I/O measurement a zpracování dat (Diadem, LabVIEW, Vector)
+  - mikrokontroléry (ESP32, Arduino, Raspberry Pi)
+  - hry (modding), tvorba skriptů
+languages: # jazyky
+  - cs (rodilý mluvčí)
+  - eng (pokročilá)
+looking_for: python developer, backend developer, embedded developer
+secondary_school: Gympl Valašské Meziříčí
+university: nedokončeno - FaCh VUT Brno, nedokončeno - FaFHKKU
