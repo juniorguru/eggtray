@@ -10,8 +10,7 @@ email: cibulect@seznam.cz
 skills: # seznam dovedností
   - python
   - rust
-  - C++
-  - VBS
+  - cpp
   - backend
   - git
 domains: # oblasti zkušeností
