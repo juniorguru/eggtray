@@ -8,17 +8,22 @@ name: Tomáš Cibulec
 location: Valašské Meziříčí, Czech Republic
 email: cibulect@seznam.cz
 skills: # seznam dovedností
-  - python, rust, C++, VBS, ...
-  - backend (rád vytvářím logiku aplikací)
+  - python
+  - rust
+  - C++
+  - VBS
+  - backend
   - git
-  - atd...
 domains: # oblasti zkušeností
-  - I/O measurement a zpracování dat (Diadem, LabVIEW, Vector)
-  - mikrokontroléry (ESP32, Arduino, Raspberry Pi)
-  - hry (modding), tvorba skriptů
+  - Diadem
+  - LabVIEW
+  - Vector
+  - ESP32
+  - Arduino
+  - Raspberry Pi
 languages: # jazyky
-  - cs (rodilý mluvčí)
-  - eng (pokročilá)
+  - cs
+  - en
 looking_for: python developer, backend developer, embedded developer
 secondary_school: Gympl Valašské Meziříčí
 university: nedokončeno - FaCh VUT Brno, nedokončeno - FaFHKKU
