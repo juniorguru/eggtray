@@ -75,12 +75,12 @@ def format_body(profile: Profile, run_url: str | None = None) -> str:
     text = (
         f"Při namátkové kontrole profilu od @{profile.github_username} "
         "jsem našlo následující nedostatky 🚨 "
-        "Dokud nebude všechno OK, tak **profil není připravený "
+        "Dokud nebudou opravené 🔴 červené věci, tak **profil není připravený "
         "na hledání práce** a na "
         "[junior.guru/candidates](https://junior.guru/candidates/) "
         "bude upozaděn 💔"
         "\n\n"
-        "Každý den to znova zkontroluju a jakmile bude všechno v pořádku, "
+        "Každý den to znova zkontroluju a jakmile budou 🔴 červené věci opravené, "
         "tak tohle issue zavřu."
         "\n\n"
     )
