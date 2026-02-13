@@ -25,5 +25,5 @@ languages:
   - en
 
 secondary_school: non_it
-university: none
+university: null
 looking_for: backend developer, java developer
