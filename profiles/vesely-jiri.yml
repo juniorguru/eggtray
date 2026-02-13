@@ -1,0 +1,29 @@
+discord_id: 199501927795392512
+
+name: Jiří Veselý
+location: Všenory, Czech Republic
+email: vesely.jiri1998@gmail.com
+
+skills:
+  - backend
+  - testing
+  - java
+  - python
+  - postgresql
+  - rabbitmq
+  - redis
+  - springboot
+  - sql
+  - javascript
+  - typescript
+  - react
+  - docker
+  - git
+
+languages:
+  - cs
+  - en
+
+secondary_school: non_it
+university: null
+looking_for: backend developer, java developer
