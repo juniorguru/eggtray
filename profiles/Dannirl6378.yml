@@ -6,16 +6,16 @@ skills:
   - frontend
   - react
   - typescript
-  - Zustand
-  - Muterial UI
-  - postgreSQL
-  - MongoDB  
+  - zustand
+  - Materialui
+  - postgresql
+  - mongodb 
 domains:
   - logistika
-  - Elektrotechnika
+  - elektrotechnika
 languages:
   - cs
   - en
-secondary_school: Elektrotechnika informatika
+secondary_school: non_it
 university: non_it
 looking_for: pozice frontend vývojář, junior frontend vývojář,
