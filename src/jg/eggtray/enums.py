@@ -34,6 +34,7 @@ class Skill(StrEnum):
     # Backend technologies
     apachespark = auto()
     csharp = auto()
+    flask = auto()
     django = auto()
     fastapi = auto()
     java = auto()
