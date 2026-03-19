@@ -1,0 +1,24 @@
+discord_id: 1318018778021236807
+name: Monika Krausová
+location: Praha 6 - Dejvice, Czech Republic
+email: moncakbp@gmail.com   
+languages:
+  - cs
+  - en
+skills:
+  - python
+  - backend
+  - frontend
+  - fullstack
+  - django
+  - flask
+  - html
+  - css
+  - sql
+  - git
+  - docker
+secondary_school: non_it  
+university: non_it 
+looking_for: Junior Python / Backend developer se zaměřením na automatizaci a ETL.
+bio: >
+  Vývojářka se zaměřením na Python a automatizaci procesů. Moje vize je jednoduchá: technologie mají lidem čas vracet, ne ho brát. Baví mě hledat efektivní cesty, propojovat backend s frontendem a optimalizovat ETL procesy nebo scraping dat. Spravuji vlastní Ubuntu server, vyvíjím v Django i Flasku a mým cílem je postupně proniknout hlouběji do světa DevOps. Ráda hledám řešení složitých problémů a zjednodušuji vše, co lze automatizovat.
