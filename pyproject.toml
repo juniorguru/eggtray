@@ -7,15 +7,15 @@ authors = [{name = "Honza Javorek", email = "honza@junior.guru"}]
 license = {text = "AGPL-3.0-only"}
 requires-python = ">=3.13,<3.14"
 dependencies = [
-    "click>=8.3.0",
+    "click>=8.3.2",
     "jg.hen@git+https://github.com/juniorguru/hen.git",
-    "pydantic>=2.12.3",
-    "pyyaml>=6.0.2",
-    "pycountry>=24.6.1",
-    "githubkit[auth-app]>=0.12.9",
+    "pydantic>=2.12.5",
+    "pyyaml>=6.0.3",
+    "pycountry>=26.2.16",
+    "githubkit[auth-app]>=0.15.3",
     "diskcache>=5.6.3",
     "httpx>=0.28.1",
-    "pillow>=12.1.0",
+    "pillow>=12.2.0",
     "python-slugify>=8.0.4",
     "playwright>=1.58.0",
 ]
@@ -30,8 +30,8 @@ eggtray = "jg.eggtray.cli:main"
 [dependency-groups]
 dev = [
     "pytest-ruff>=0.5",
-    "pytest>=8.4.2",
-    "ruff>=0.14.0",
+    "pytest>=9.0.3",
+    "ruff>=0.15.10",
 ]
 
 [tool.pytest.ini_options]
@@ -51,7 +51,7 @@ lines-after-imports = 2
 known-third-party = ["jg.hen"]
 
 [build-system]
-requires = ["uv_build>=0.8.11,<0.12.0"]
+requires = ["uv_build>=0.11.6,<0.12.0"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
