@@ -14,6 +14,7 @@ class School(StrEnum):
     it = auto()
     math = auto()
     non_it = auto()
+    electro = auto()
 
 
 @unique
@@ -80,6 +81,7 @@ class Skill(StrEnum):
     # Tools
     docker = auto()
     git = auto()
+    linux = auto()
 
 
 Language = StrEnum(
