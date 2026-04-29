@@ -5,8 +5,8 @@ languages:
   - cs
   - en
 skills:
-  - CPP
-  - C
+  - cpp
+  - c
   - git
   - linux
 secondary_school: electro
