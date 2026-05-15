@@ -1,0 +1,23 @@
+name: Jeanom C Williams
+bio: Jeanom is a passionate software developer...
+looking_for: Entry-level python or fullstack dev
+email: jeanomwilliam@gmail.com
+location: Nigeria
+discord_id: 1076828336518598776
+skills: 
+  - backend
+  - frontend
+  - fullstack
+  - flask
+  - django
+  - fastapi
+  - python
+domains: 
+  - web development
+  - data science
+experience:
+  - intern  # Change this to a valid enum value
+secondary_school: null
+university: null  # Add this required field
+languages:
+  - en  
