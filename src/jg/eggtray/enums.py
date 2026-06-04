@@ -82,6 +82,7 @@ class Skill(StrEnum):
     docker = auto()
     git = auto()
     linux = auto()
+    playwright = auto()
 
 
 Language = StrEnum(
