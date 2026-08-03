@@ -1,0 +1,34 @@
+name: Martina Kolářová
+bio: Junior Data / HR Data Analyst with experience in HRIS, reporting, data quality, API integrations,
+  automation, and AI workflows.
+location: Prague, Czech Republic
+languages:
+- cs
+- en
+- ru
+skills:
+- sql
+- postgresql
+- python
+- pandas
+- git
+- testing
+- javascript
+- react
+- vue
+- html
+- css
+- backend
+- frontend
+- fullstack
+domains:
+- data analytics
+- HR technology
+- API integrations
+- automation
+- AI workflows
+experience:
+- employee
+secondary_school: null
+university: non_it
+looking_for: Junior Data Analyst, HR Data Analyst, BI Analyst, or HRIS role
