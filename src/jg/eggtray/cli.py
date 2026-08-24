@@ -43,8 +43,11 @@ class ContextObj:
 @click.pass_context
 def main(context: click.Context, debug: bool):
     logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
-    logging.getLogger("httpx").setLevel(logging.WARNING if not debug else logging.INFO)
-    for logger_name in ["httpcore", "PIL"]:
+    for logger_name in ["httpx", "httpx2"]:
+        logging.getLogger(logger_name).setLevel(
+            logging.WARNING if not debug else logging.INFO
+        )
+    for logger_name in ["httpcore", "httpcore2", "PIL"]:
         logging.getLogger(logger_name).setLevel(logging.WARNING)
 
     obj = context.ensure_object(ContextObj)
