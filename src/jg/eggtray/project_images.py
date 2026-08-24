@@ -7,7 +7,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import AsyncGenerator, Generator
 
-import httpx
+import httpx2
 from PIL import Image
 from playwright._impl._errors import Error as PlaywrightError
 from playwright.async_api import async_playwright
@@ -53,7 +53,7 @@ async def start_browser() -> AsyncGenerator[Browser | None, None]:
 async def download_project_images(
     profiles: list[Profile], output_dir: Path
 ) -> list[tuple[ProjectInfo, Path]]:
-    async with httpx.AsyncClient() as http_client, start_browser() as browser:
+    async with httpx2.AsyncClient() as http_client, start_browser() as browser:
         tasks = [
             asyncio.create_task(
                 download_project_image(http_client, browser, project, output_dir)
@@ -66,7 +66,7 @@ async def download_project_images(
 
 
 async def download_project_image(
-    http_client: httpx.AsyncClient,
+    http_client: httpx2.AsyncClient,
     browser: Browser | None,
     project: ProjectInfo,
     output_dir: Path,
@@ -105,7 +105,7 @@ def collect_image_requests(project: ProjectInfo) -> Generator[ImageRequest, None
 
 
 async def try_download(
-    http_client: httpx.AsyncClient, url: str, timeout_s: float = 10.0
+    http_client: httpx2.AsyncClient, url: str, timeout_s: float = 10.0
 ) -> bytes | None:
     try:
         async with _downloads_limit:
