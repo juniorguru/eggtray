@@ -166,6 +166,11 @@ def format_summary_body(summary: Summary, run_url: str | None = None) -> str:
                 "Až to bude OK, nezapomeň si vytvořit profil na [junior.guru/candidates](https://junior.guru/candidates/)!\n\n"
             )
         text += render_table(summary.outcomes)
+        text += (
+            "\n\nChceš, aby se na tvůj GitHub, CV nebo kód podíval i člověk? "
+            "V [klubu junior.guru](https://junior.guru/club/) ti dají zpětnou vazbu lidi z oboru. "
+            "Prvních 14 dní je zdarma a nemusíš zadávat kartu."
+        )
     text += (
         "\n\n<details>\n\n"
         "<summary>Výsledky jako JSON</summary>\n\n"
