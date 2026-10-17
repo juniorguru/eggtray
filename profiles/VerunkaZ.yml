@@ -1,0 +1,32 @@
+name: "Veronika Zpěváková"
+discord_id: 1332109510923255930
+bio: "BI, data and AI enthusiast with hands-on experience in data analytics at Bonami and software development at EPAM systems. I support tech communities, create mini-project challenges and data quizzes, and host data meetups. I’m confident speaking in front of an audience and enjoy presenting ideas and explaining things clearly. I enjoy learning as I go and trying out new tools for data analysis and beyond."
+looking_for: "Data analyst, Data engineer, BI analyst, Data & AI Consultant"
+email: "zpevakova.vero@gmail.com"
+location: "Praha"
+
+skills:
+  - python
+  - pandas
+  - matplotlib
+  - sql
+  - typescript
+  - postgresql
+  - docker
+  - git
+
+languages:
+  - cs
+  - en
+
+experience: 
+  - volunteer
+  - employee
+
+domains:
+  - data analytics
+  - software engineering
+  - customer service 
+
+secondary_school: non_it
+university: null
