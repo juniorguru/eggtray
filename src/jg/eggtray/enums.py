@@ -4,7 +4,7 @@ import pycountry
 
 
 class Experience(StrEnum):
-    volunteer = auto()
+    volunteering = auto()
     intern = auto()
     trainee = auto()
     employee = auto()
