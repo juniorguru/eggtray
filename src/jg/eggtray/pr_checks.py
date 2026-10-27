@@ -264,9 +264,9 @@ def format_summary_section(summary: Summary) -> str:
         if is_ready(summary.outcomes):
             text += (
                 "Nevidím žádné zásadní nedostatky! 💪 "
-                "Kvůli GitHubu tedy profil na "
-                "[junior.guru/candidates](https://junior.guru/candidates/) "
-                "nebude upozaděný.\n\n"
+                "Pokud projdou ostatní testy, po začlenění tohoto PR se profil "
+                "do 24 hodin objeví na "
+                "[junior.guru/candidates](https://junior.guru/candidates/).\n\n"
             )
         else:
             text += (
