@@ -167,10 +167,9 @@ def get_missing_profile_comment_text(username: str, run_url: str | None = None) 
 def get_not_allowed_comment_text(username: str, run_url: str | None = None) -> str:
     text = (
         "Ahoj! "
-        f"Vypadá to, že chceš, ať se podívám na profil [github.com/{username}](https://github.com/{username}), "
-        "jenže zpětnou vazbu dávám jen na vlastní profil 🙅 "
-        "Pokud chceš zkontrolovat ten svůj, založ nové issue a buď v něm uveď svoje uživatelské jméno, "
-        "nebo tam žádné nepiš."
+        f"Vypadá to, že chceš, ať se podívám na cizí profil [github.com/{username}](https://github.com/{username}), ale to já nedělám. "
+        "Pokud chceš zkontrolovat svůj profil, založ si "
+        "[nové issue](https://github.com/juniorguru/eggtray/issues/new?template=check.md)."
     )
     if run_url:
         text += f"\n\n---\n\n[Záznam mojí práce]({run_url})"
