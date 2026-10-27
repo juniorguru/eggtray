@@ -185,6 +185,28 @@ async def find_comment(
     return None
 
 
+async def fetch_event_actors(
+    github: GitHub, owner: str, repo: str, issue_number: int, event: str
+) -> list[str]:
+    logger.debug(f"Fetching actors of {event!r} events in #{issue_number}")
+    actors = []
+    page = 1
+    while True:
+        response = await github.rest.issues.async_list_events(
+            owner=owner, repo=repo, issue_number=issue_number, per_page=100, page=page
+        )
+        # githubkit can't parse all event types, hence the raw JSON
+        events = response.json()
+        actors += [
+            item["actor"]["login"]
+            for item in events
+            if item["event"] == event and item.get("actor")
+        ]
+        if len(events) < 100:
+            return actors
+        page += 1
+
+
 async def update_comment(
     github: GitHub, owner: str, repo: str, comment_id: int, text: str
 ) -> None:

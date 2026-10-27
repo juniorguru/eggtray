@@ -7,9 +7,16 @@ from githubkit.versions.latest.models import DiffEntry
 from jg.hen.core import check_profile_url
 from jg.hen.models import Summary
 
-from jg.eggtray.checks import BOT_USERNAME, is_allowed, profile_exists, render_table
+from jg.eggtray.checks import (
+    BOT_USERNAME,
+    PRIVILEGED_USERNAMES,
+    is_allowed,
+    profile_exists,
+    render_table,
+)
 from jg.eggtray.issues import (
     close_pull_request,
+    fetch_event_actors,
     fetch_pull_request,
     fetch_pull_request_files,
     find_comment,
@@ -36,7 +43,6 @@ async def check_pull_request(
     owner: str,
     repo: str,
     pr_number: int,
-    skip_ownership_check: bool = False,
     run_url: str | None = None,
 ) -> None:
     async with GitHub(auth=auth) as github:
@@ -51,16 +57,20 @@ async def check_pull_request(
         files = await fetch_pull_request_files(github, owner, repo, pr_number)
         touched_profiles = get_touched_profiles(files)
         logger.info(f"Touched profiles: {', '.join(touched_profiles) or 'none'}")
+        present_profiles = get_checked_profiles(files)
         wrong_paths = get_wrong_paths(files)
         logger.info(f"Wrong paths: {', '.join(wrong_paths) or 'none'}")
 
-        if skip_ownership_check:
-            logger.warning("Skipping the ownership check")
-        elif foreign_usernames := [
+        foreign_usernames = [
             username
             for username in touched_profiles
             if not is_allowed(author, username)
-        ]:
+        ]
+        if foreign_usernames and await is_accepted(github, owner, repo, pr_number):
+            logger.warning(
+                "Reopened by a privileged user, skipping the ownership check"
+            )
+        elif foreign_usernames:
             existing_usernames = [
                 username
                 for username in foreign_usernames
@@ -85,12 +95,14 @@ async def check_pull_request(
                 f"Accounts don't exist, probably typos: {', '.join(foreign_usernames)}"
             )
             wrong_paths += [
-                touched_profiles[username] for username in foreign_usernames
+                path
+                for username, path in present_profiles.items()
+                if username in foreign_usernames
             ]
 
         checked_profiles = {
             username: path
-            for username, path in get_checked_profiles(files).items()
+            for username, path in present_profiles.items()
             if author and username.lower() == author.lower()
         }
         logger.info(f"Profiles to check: {', '.join(checked_profiles) or 'none'}")
@@ -137,6 +149,12 @@ async def check_pull_request(
             await update_comment(github, owner, repo, comment_id, body)
         else:
             await post_comment(github, owner, repo, pr_number, body)
+
+
+async def is_accepted(github: GitHub, owner: str, repo: str, pr_number: int) -> bool:
+    # A privileged user reopening a PR closed by the bot means they want to accept it
+    actors = await fetch_event_actors(github, owner, repo, pr_number, "reopened")
+    return any(actor.lower() in PRIVILEGED_USERNAMES for actor in actors)
 
 
 def get_touched_profiles(files: list[DiffEntry]) -> dict[str, str]:

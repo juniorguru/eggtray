@@ -190,6 +190,7 @@ class FakeAPI:
         files: list[DiffEntry],
         existing_usernames: set[str] | None = None,
         comment_id: int | None = None,
+        reopened_by: list[str] | None = None,
     ):
         self.calls: list[tuple[str, Any]] = []
         self.existing_usernames = existing_usernames or set()
@@ -217,6 +218,10 @@ class FakeAPI:
         async def close_pull_request(*args: Any):
             self.calls.append(("close_pull_request",))
 
+        async def fetch_event_actors(github, owner, repo, number, event):
+            assert event == "reopened"
+            return reopened_by or []
+
         async def profile_exists(github, username):
             return username in self.existing_usernames
 
@@ -232,6 +237,7 @@ class FakeAPI:
             post_comment,
             update_comment,
             close_pull_request,
+            fetch_event_actors,
             profile_exists,
             check_profile_url,
         ]:
@@ -286,7 +292,23 @@ def test_check_pull_request_foreign_profile(monkeypatch: pytest.MonkeyPatch):
     assert "github.com/bob" in api.calls[0][1]
 
 
-def test_check_pull_request_foreign_profile_skip_ownership_check(
+@pytest.mark.parametrize("reopened_by", [["honzajavorek"], ["alice", "HonzaJavorek"]])
+def test_check_pull_request_foreign_profile_reopened_by_privileged(
+    monkeypatch: pytest.MonkeyPatch, reopened_by: list[str]
+):
+    api = FakeAPI(
+        monkeypatch,
+        "alice",
+        [create_diff_entry("profiles/bob.yml")],
+        existing_usernames={"bob"},
+        reopened_by=reopened_by,
+    )
+    api.run()
+
+    assert api.names() == []
+
+
+def test_check_pull_request_foreign_profile_reopened_by_author(
     monkeypatch: pytest.MonkeyPatch,
 ):
     api = FakeAPI(
@@ -294,10 +316,11 @@ def test_check_pull_request_foreign_profile_skip_ownership_check(
         "alice",
         [create_diff_entry("profiles/bob.yml")],
         existing_usernames={"bob"},
+        reopened_by=["alice"],
     )
-    api.run(skip_ownership_check=True)
+    api.run()
 
-    assert api.names() == []
+    assert api.names() == ["post_comment", "close_pull_request"]
 
 
 def test_check_pull_request_typo(monkeypatch: pytest.MonkeyPatch):
@@ -307,6 +330,23 @@ def test_check_pull_request_typo(monkeypatch: pytest.MonkeyPatch):
     assert api.names() == ["post_comment"]
     assert "`profiles/alcie.yml`" in api.calls[0][1]
     assert "`profiles/alice.yml`" in api.calls[0][1]
+
+
+@pytest.mark.parametrize(
+    "file",
+    [
+        create_diff_entry("profiles/alice.yml", "renamed", "profiles/OldAlice.yml"),
+        create_diff_entry("profiles/OldAlice.yml", "removed"),
+    ],
+)
+def test_check_pull_request_gone_account_not_reported(
+    monkeypatch: pytest.MonkeyPatch, file: DiffEntry
+):
+    api = FakeAPI(monkeypatch, "alice", [file])
+    api.run()
+
+    assert "Špatný název souboru" not in "".join(str(call[-1]) for call in api.calls)
+    assert "close_pull_request" not in api.names()
 
 
 def test_check_pull_request_wrong_suffix(monkeypatch: pytest.MonkeyPatch):
