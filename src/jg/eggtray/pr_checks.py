@@ -143,7 +143,7 @@ def get_not_allowed_comment_text(
     text = (
         "Ahoj! "
         f"Tenhle PR mění cizí profil ({format_profile_links(usernames)}), "
-        "ale každý může přidat, upravit nebo odebrat jen ten svůj 🙅 "
+        "ale každý může přidat, upravit, nebo odebrat jen ten svůj 🙅 "
     )
     if author:
         text += (
@@ -213,7 +213,6 @@ def format_summary_section(summary: Summary) -> str:
                 "Po začlenění tohoto PR se profil objeví na "
                 "[junior.guru/candidates](https://junior.guru/candidates/), "
                 "ale dokud nebudou 🔴 červené věci opravené, bude upozaděný 💔 "
-                "Opravit je můžeš ještě před začleněním, nebo kdykoliv potom. "
                 "Každý den to znova zkontroluju.\n\n"
             )
         text += render_table(summary.outcomes)
