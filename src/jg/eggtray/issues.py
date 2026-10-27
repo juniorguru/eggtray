@@ -6,7 +6,6 @@ from githubkit import GitHub
 from githubkit.versions.latest.models import (
     DiffEntry,
     Issue,
-    IssueComment,
     IssuePropLabelsItemsOneof1 as IssueLabel,
     PullRequest,
 )
@@ -160,9 +159,16 @@ async def close_pull_request(
 
 
 async def find_comment(
-    github: GitHub, owner: str, repo: str, issue_number: int, marker: str
+    github: GitHub,
+    owner: str,
+    repo: str,
+    issue_number: int,
+    author: str,
+    marker: str,
 ) -> int | None:
-    logger.debug(f"Looking for a bot comment with {marker!r} in #{issue_number}")
+    logger.debug(
+        f"Looking for a comment by @{author} with {marker!r} in #{issue_number}"
+    )
     async for comment in github.paginate(
         github.rest.issues.async_list_comments,
         owner=owner,
@@ -170,13 +176,27 @@ async def find_comment(
         issue_number=issue_number,
         per_page=100,
     ):
-        if is_bot_comment(comment) and marker in (comment.body or ""):
+        if (
+            comment.user
+            and comment.user.login == author
+            and marker in (comment.body or "")
+        ):
             return comment.id
     return None
 
 
-def is_bot_comment(comment: IssueComment) -> bool:
-    return bool(comment.user and comment.user.type == "Bot")
+async def fetch_file_content(
+    github: GitHub, owner: str, repo: str, path: str, ref: str
+) -> str:
+    logger.debug(f"Fetching {path} at {ref} from {owner}/{repo}")
+    response = await github.rest.repos.async_get_content(
+        owner=owner,
+        repo=repo,
+        path=path,
+        ref=ref,
+        headers={"Accept": "application/vnd.github.raw+json"},
+    )
+    return response.text
 
 
 async def update_comment(

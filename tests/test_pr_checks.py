@@ -1,17 +1,35 @@
+import asyncio
+from types import SimpleNamespace
+from typing import Any
+
 import pytest
 from githubkit.versions.latest.models import DiffEntry
 from jg.hen.models import Outcome, Status, Summary
 
+from jg.eggtray import pr_checks
 from jg.eggtray.pr_checks import (
     COMMENT_MARKER,
+    check_pull_request,
     format_summary_body,
     format_summary_section,
-    get_checked_usernames,
+    format_wrong_paths_section,
+    get_checked_profiles,
     get_not_allowed_comment_text,
-    get_touched_usernames,
-    get_username,
+    get_touched_profiles,
+    get_username_from_path,
+    get_validation_error,
     get_wait_comment_text,
+    get_wrong_paths,
+    touches_only_profiles,
 )
+
+
+VALID_PROFILE = """
+languages: [cs]
+skills: [python]
+secondary_school: non_it
+university: null
+"""
 
 
 def create_diff_entry(
@@ -36,37 +54,49 @@ def create_diff_entry(
     [
         ("profiles/alice.yml", "alice"),
         ("profiles/Alice.yml", "Alice"),
-        ("profiles/alice.yaml", "alice"),
+        ("profiles/alice-bob.yml", "alice-bob"),
+        ("profiles/alice.yaml", None),
+        ("profiles/alice.json", None),
+        ("profiles/alice.backup.yml", None),
+        ("profiles/-alice.yml", None),
+        ("profiles/al`ice.yml", None),
         ("profiles/nested/alice.yml", None),
         ("README.md", None),
         ("src/jg/eggtray/enums.py", None),
     ],
 )
-def test_get_username(path: str, expected: str | None):
-    assert get_username(path) == expected
+def test_get_username_from_path(path: str, expected: str | None):
+    assert get_username_from_path(path) == expected
 
 
-def test_get_touched_usernames():
+def test_get_touched_profiles():
     files = [
         create_diff_entry("profiles/alice.yml", "added"),
         create_diff_entry("profiles/bob.yml", "modified"),
         create_diff_entry("profiles/carol.yml", "removed"),
         create_diff_entry("profiles/dave.yml", "renamed", "profiles/eve.yml"),
+        create_diff_entry("profiles/frank.yaml", "added"),
         create_diff_entry("src/jg/eggtray/enums.py", "modified"),
     ]
 
-    assert get_touched_usernames(files) == ["alice", "bob", "carol", "dave", "eve"]
+    assert list(get_touched_profiles(files)) == [
+        "alice",
+        "bob",
+        "carol",
+        "dave",
+        "eve",
+    ]
 
 
-def test_get_touched_usernames_unique():
+def test_get_touched_profiles_unique():
     files = [
         create_diff_entry("profiles/alice.yml", "renamed", "profiles/alice.yml"),
     ]
 
-    assert get_touched_usernames(files) == ["alice"]
+    assert get_touched_profiles(files) == {"alice": "profiles/alice.yml"}
 
 
-def test_get_checked_usernames():
+def test_get_checked_profiles():
     files = [
         create_diff_entry("profiles/alice.yml", "added"),
         create_diff_entry("profiles/bob.yml", "modified"),
@@ -75,7 +105,65 @@ def test_get_checked_usernames():
         create_diff_entry("src/jg/eggtray/enums.py", "modified"),
     ]
 
-    assert get_checked_usernames(files) == ["alice", "bob", "dave"]
+    assert get_checked_profiles(files) == {
+        "alice": "profiles/alice.yml",
+        "bob": "profiles/bob.yml",
+        "dave": "profiles/dave.yml",
+    }
+
+
+def test_get_wrong_paths():
+    files = [
+        create_diff_entry("profiles/alice.yml", "added"),
+        create_diff_entry("profiles/bob.yaml", "added"),
+        create_diff_entry("profiles/carol.json", "removed"),
+        create_diff_entry("profiles/dave.backup.yml", "modified"),
+        create_diff_entry("README.md", "modified"),
+    ]
+
+    assert get_wrong_paths(files) == [
+        "profiles/bob.yaml",
+        "profiles/dave.backup.yml",
+    ]
+
+
+@pytest.mark.parametrize(
+    "files, expected",
+    [
+        ([create_diff_entry("profiles/alice.yml")], True),
+        (
+            [
+                create_diff_entry("profiles/alice.yml"),
+                create_diff_entry("src/jg/eggtray/enums.py", "modified"),
+            ],
+            False,
+        ),
+        (
+            [create_diff_entry("profiles/alice.yml", "renamed", "alice.yml")],
+            False,
+        ),
+    ],
+)
+def test_touches_only_profiles(files: list[DiffEntry], expected: bool):
+    assert touches_only_profiles(files) is expected
+
+
+def test_get_validation_error_valid():
+    assert get_validation_error("Alice", VALID_PROFILE) is None
+
+
+@pytest.mark.parametrize(
+    "content",
+    [
+        "skills: [python",
+        "",
+        "- just a list",
+        VALID_PROFILE + "linkdin: https://example.com\n",
+        VALID_PROFILE.replace("python", "pyton"),
+    ],
+)
+def test_get_validation_error_invalid(content: str):
+    assert get_validation_error("alice", content)
 
 
 def test_get_not_allowed_comment_text():
@@ -90,6 +178,13 @@ def test_get_not_allowed_comment_text_no_author():
 
     assert "github.com/bob" in text
     assert "`profiles/" not in text
+
+
+def test_format_wrong_paths_section():
+    text = format_wrong_paths_section("alice", ["profiles/al`ice.yaml"])
+
+    assert "`profiles/alice.yaml`" in text
+    assert "`profiles/alice.yml`" in text
 
 
 def test_wait_comment_has_marker():
@@ -123,3 +218,228 @@ def test_format_summary_section_error():
     summary = Summary(username="alice", outcomes=[], error=Exception("Boom"))
 
     assert "Boom" in format_summary_section(summary)
+
+
+class FakeGitHub:
+    def __init__(self, **kwargs: Any):
+        pass
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *args: object):
+        pass
+
+
+class FakeAPI:
+    def __init__(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        author: str,
+        files: list[DiffEntry],
+        existing_usernames: set[str] | None = None,
+        comment_id: int | None = None,
+        content: str = VALID_PROFILE,
+    ):
+        self.calls: list[tuple[str, Any]] = []
+        self.existing_usernames = existing_usernames or set()
+        self.pr = SimpleNamespace(
+            state="open",
+            user=SimpleNamespace(login=author),
+            head=SimpleNamespace(repo=None, sha="abc123"),
+            base=SimpleNamespace(
+                repo=SimpleNamespace(
+                    owner=SimpleNamespace(login="juniorguru"), name="eggtray"
+                )
+            ),
+        )
+
+        async def fetch_pull_request(*args: Any):
+            return self.pr
+
+        async def fetch_pull_request_files(*args: Any):
+            return files
+
+        async def find_comment(*args: Any):
+            return comment_id
+
+        async def post_comment(github, owner, repo, number, text):
+            self.calls.append(("post_comment", text))
+            return 42
+
+        async def update_comment(github, owner, repo, comment_id, text):
+            self.calls.append(("update_comment", comment_id, text))
+
+        async def close_pull_request(*args: Any):
+            self.calls.append(("close_pull_request",))
+
+        async def profile_exists(github, username):
+            return username in self.existing_usernames
+
+        async def fetch_file_content(github, owner, repo, path, ref):
+            self.calls.append(("fetch_file_content", path, ref))
+            return content
+
+        async def check_profile_url(profile_url, **kwargs):
+            self.calls.append(("check_profile_url", profile_url))
+            return Summary(username=profile_url.split("/")[-1], outcomes=[])
+
+        monkeypatch.setattr(pr_checks, "GitHub", FakeGitHub)
+        for fn in [
+            fetch_pull_request,
+            fetch_pull_request_files,
+            find_comment,
+            post_comment,
+            update_comment,
+            close_pull_request,
+            profile_exists,
+            fetch_file_content,
+            check_profile_url,
+        ]:
+            monkeypatch.setattr(pr_checks, fn.__name__, fn)
+
+    def run(self, **kwargs: Any) -> list[tuple[str, Any]]:
+        asyncio.run(
+            check_pull_request(None, "juniorguru", "eggtray", 1, **kwargs)  # type: ignore
+        )
+        return self.calls
+
+    def names(self) -> list[str]:
+        return [call[0] for call in self.calls]
+
+
+def test_check_pull_request_own_profile(monkeypatch: pytest.MonkeyPatch):
+    api = FakeAPI(monkeypatch, "alice", [create_diff_entry("profiles/alice.yml")])
+    api.run()
+
+    assert api.names() == [
+        "post_comment",
+        "fetch_file_content",
+        "check_profile_url",
+        "update_comment",
+    ]
+    assert api.calls[-1][1] == 42
+    assert "Nevidím žádné zásadní nedostatky" in api.calls[-1][2]
+
+
+def test_check_pull_request_reuses_comment(monkeypatch: pytest.MonkeyPatch):
+    api = FakeAPI(
+        monkeypatch,
+        "alice",
+        [create_diff_entry("profiles/alice.yml")],
+        comment_id=7,
+    )
+    api.run()
+
+    assert "post_comment" not in api.names()
+    assert {call[1] for call in api.calls if call[0] == "update_comment"} == {7}
+
+
+def test_check_pull_request_foreign_profile(monkeypatch: pytest.MonkeyPatch):
+    api = FakeAPI(
+        monkeypatch,
+        "alice",
+        [create_diff_entry("profiles/bob.yml", "removed")],
+        existing_usernames={"bob"},
+    )
+    api.run()
+
+    assert api.names() == ["post_comment", "close_pull_request"]
+    assert "github.com/bob" in api.calls[0][1]
+
+
+def test_check_pull_request_foreign_profile_skip_ownership_check(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    api = FakeAPI(
+        monkeypatch,
+        "alice",
+        [create_diff_entry("profiles/bob.yml")],
+        existing_usernames={"bob"},
+    )
+    api.run(skip_ownership_check=True)
+
+    assert api.names() == []
+
+
+def test_check_pull_request_typo(monkeypatch: pytest.MonkeyPatch):
+    api = FakeAPI(monkeypatch, "alice", [create_diff_entry("profiles/alcie.yml")])
+    api.run()
+
+    assert api.names() == ["post_comment"]
+    assert "`profiles/alcie.yml`" in api.calls[0][1]
+    assert "`profiles/alice.yml`" in api.calls[0][1]
+
+
+def test_check_pull_request_wrong_suffix(monkeypatch: pytest.MonkeyPatch):
+    api = FakeAPI(monkeypatch, "alice", [create_diff_entry("profiles/alice.yaml")])
+    api.run()
+
+    assert api.names() == ["post_comment"]
+    assert "`profiles/alice.yaml`" in api.calls[0][1]
+
+
+def test_check_pull_request_privileged_doesnt_check_others(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    api = FakeAPI(
+        monkeypatch,
+        "honzajavorek",
+        [create_diff_entry(f"profiles/user{i}.yml", "modified") for i in range(30)],
+    )
+    api.run()
+
+    assert api.names() == []
+
+
+def test_check_pull_request_invalid_profile(monkeypatch: pytest.MonkeyPatch):
+    api = FakeAPI(
+        monkeypatch,
+        "alice",
+        [create_diff_entry("profiles/alice.yml")],
+        content="skills: [pyton]",
+    )
+    api.run()
+
+    assert "check_profile_url" not in api.names()
+    assert "V souboru `profiles/alice.yml` je chyba" in api.calls[-1][2]
+
+
+def test_check_pull_request_skips_validation_when_schema_changes(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    api = FakeAPI(
+        monkeypatch,
+        "alice",
+        [
+            create_diff_entry("profiles/alice.yml"),
+            create_diff_entry("src/jg/eggtray/enums.py", "modified"),
+        ],
+        content="skills: [brand_new_skill]",
+    )
+    api.run()
+
+    assert "fetch_file_content" not in api.names()
+    assert "check_profile_url" in api.names()
+
+
+def test_check_pull_request_stale_comment(monkeypatch: pytest.MonkeyPatch):
+    api = FakeAPI(
+        monkeypatch,
+        "alice",
+        [create_diff_entry("profiles/alice.yml", "removed")],
+        comment_id=7,
+    )
+    api.run()
+
+    assert api.names() == ["update_comment"]
+    assert "nepřidává ani nemění žádný profil" in api.calls[0][2]
+
+
+def test_check_pull_request_nothing_to_do(monkeypatch: pytest.MonkeyPatch):
+    api = FakeAPI(
+        monkeypatch, "alice", [create_diff_entry("profiles/alice.yml", "removed")]
+    )
+    api.run()
+
+    assert api.names() == []

@@ -19,7 +19,9 @@ from jg.eggtray.models import is_ready
 logger = logging.getLogger(__name__)
 
 
-PRIVILEGED_USERNAMES = {"honzajavorek", "roboticke-kure[bot]"}
+BOT_USERNAME = "roboticke-kure[bot]"
+
+PRIVILEGED_USERNAMES = {"honzajavorek", BOT_USERNAME}
 
 
 COLORS = {

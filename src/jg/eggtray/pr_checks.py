@@ -1,27 +1,34 @@
 import logging
+import re
 from pathlib import PurePosixPath
 
+import yaml
 from githubkit import BaseAuthStrategy, GitHub
-from githubkit.versions.latest.models import DiffEntry
+from githubkit.versions.latest.models import DiffEntry, PullRequest
 from jg.hen.core import check_profile_url
 from jg.hen.models import Summary
 
-from jg.eggtray.checks import is_allowed, profile_exists, render_table
+from jg.eggtray.checks import BOT_USERNAME, is_allowed, profile_exists, render_table
 from jg.eggtray.issues import (
     close_pull_request,
+    fetch_file_content,
     fetch_pull_request,
     fetch_pull_request_files,
     find_comment,
     post_comment,
     update_comment,
 )
-from jg.eggtray.models import is_ready
+from jg.eggtray.models import ProfileConfig, is_ready
 
 
 logger = logging.getLogger(__name__)
 
 
 PROFILES_DIR = PurePosixPath("profiles")
+
+PROFILE_SUFFIX = ".yml"
+
+USERNAME_RE = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$")
 
 COMMENT_MARKER = "<!-- eggtray:check-pr -->"
 
@@ -31,6 +38,7 @@ async def check_pull_request(
     owner: str,
     repo: str,
     pr_number: int,
+    skip_ownership_check: bool = False,
     run_url: str | None = None,
 ) -> None:
     async with GitHub(auth=auth) as github:
@@ -43,91 +51,176 @@ async def check_pull_request(
         logger.info(f"Pull request #{pr_number} is by @{author}")
 
         files = await fetch_pull_request_files(github, owner, repo, pr_number)
-        touched_usernames = get_touched_usernames(files)
-        logger.info(f"Touched profiles: {', '.join(touched_usernames) or 'none'}")
-        if not touched_usernames:
-            return
+        touched_profiles = get_touched_profiles(files)
+        logger.info(f"Touched profiles: {', '.join(touched_profiles) or 'none'}")
+        wrong_paths = get_wrong_paths(files)
+        logger.info(f"Wrong paths: {', '.join(wrong_paths) or 'none'}")
 
-        if foreign_usernames := [
+        if skip_ownership_check:
+            logger.warning("Skipping the ownership check")
+        elif foreign_usernames := [
             username
-            for username in touched_usernames
+            for username in touched_profiles
             if not is_allowed(author, username)
         ]:
-            logger.error(
-                f"@{author} isn't allowed to touch profiles: {', '.join(foreign_usernames)}"
+            existing_usernames = [
+                username
+                for username in foreign_usernames
+                if await profile_exists(github, username)
+            ]
+            if existing_usernames:
+                logger.error(
+                    f"@{author} isn't allowed to touch profiles: {', '.join(existing_usernames)}"
+                )
+                await post_comment(
+                    github,
+                    owner,
+                    repo,
+                    pr_number,
+                    get_not_allowed_comment_text(
+                        author, existing_usernames, run_url=run_url
+                    ),
+                )
+                await close_pull_request(github, owner, repo, pr_number)
+                return
+            logger.warning(
+                f"Accounts don't exist, probably typos: {', '.join(foreign_usernames)}"
             )
-            await post_comment(
-                github,
-                owner,
-                repo,
-                pr_number,
-                get_not_allowed_comment_text(
-                    author, foreign_usernames, run_url=run_url
-                ),
-            )
-            await close_pull_request(github, owner, repo, pr_number)
-            return
+            wrong_paths += [
+                touched_profiles[username] for username in foreign_usernames
+            ]
 
-        usernames = get_checked_usernames(files)
-        logger.info(f"Profiles to check: {', '.join(usernames) or 'none'}")
-        if not usernames:
-            return
+        checked_profiles = {
+            username: path
+            for username, path in get_checked_profiles(files).items()
+            if author and username.lower() == author.lower()
+        }
+        logger.info(f"Profiles to check: {', '.join(checked_profiles) or 'none'}")
 
-        wait_text = get_wait_comment_text(usernames, run_url=run_url)
-        if comment_id := await find_comment(
-            github, owner, repo, pr_number, COMMENT_MARKER
-        ):
-            logger.info(f"Reusing comment {comment_id}")
-            await update_comment(github, owner, repo, comment_id, wait_text)
-        else:
-            comment_id = await post_comment(github, owner, repo, pr_number, wait_text)
+        comment_id = await find_comment(
+            github, owner, repo, pr_number, BOT_USERNAME, COMMENT_MARKER
+        )
+        if not checked_profiles and not wrong_paths:
+            if comment_id:
+                logger.info(f"Nothing to check, updating comment {comment_id}")
+                await update_comment(
+                    github,
+                    owner,
+                    repo,
+                    comment_id,
+                    format_summary_body(
+                        [get_nothing_to_check_section()], run_url=run_url
+                    ),
+                )
+            return
 
         sections = []
-        for username in usernames:
-            profile_url = f"https://github.com/{username}"
-            if await profile_exists(github, username):
+        if wrong_paths:
+            sections.append(format_wrong_paths_section(author, wrong_paths))
+        if checked_profiles:
+            wait_text = get_wait_comment_text(list(checked_profiles), run_url=run_url)
+            if comment_id:
+                logger.info(f"Reusing comment {comment_id}")
+                await update_comment(github, owner, repo, comment_id, wait_text)
+            else:
+                comment_id = await post_comment(
+                    github, owner, repo, pr_number, wait_text
+                )
+            validate = touches_only_profiles(files)
+            if not validate:
+                logger.warning("The PR changes more than profiles, skipping validation")
+            for username, path in checked_profiles.items():
+                if validate and (
+                    error := await validate_profile(github, pr, username, path)
+                ):
+                    logger.error(f"Profile {path} is invalid: {error}")
+                    sections.append(
+                        format_invalid_profile_section(username, path, error)
+                    )
+                    continue
+                profile_url = f"https://github.com/{username}"
                 logger.info(f"Checking profile {profile_url}")
                 summary: Summary = await check_profile_url(profile_url, github=github)
                 logger.debug("Summary:\n%s", summary.model_dump_json(indent=2))
                 sections.append(format_summary_section(summary))
-            else:
-                logger.error(f"Profile {profile_url} doesn't exist")
-                sections.append(format_missing_profile_section(username))
 
         logger.info("Posting summary")
-        await update_comment(
-            github,
-            owner,
-            repo,
-            comment_id,
-            format_summary_body(sections, run_url=run_url),
-        )
+        body = format_summary_body(sections, run_url=run_url)
+        if comment_id:
+            await update_comment(github, owner, repo, comment_id, body)
+        else:
+            await post_comment(github, owner, repo, pr_number, body)
 
 
-def get_touched_usernames(files: list[DiffEntry]) -> list[str]:
-    paths = [file.filename for file in files] + [
-        file.previous_filename for file in files if file.previous_filename
-    ]
-    return unique(username for path in paths if (username := get_username(path)))
+async def validate_profile(
+    github: GitHub, pr: PullRequest, username: str, path: str
+) -> str | None:
+    if head_repo := pr.head.repo:
+        owner, repo = head_repo.owner.login, head_repo.name
+    else:
+        owner, repo = pr.base.repo.owner.login, pr.base.repo.name
+    content = await fetch_file_content(github, owner, repo, path, pr.head.sha)
+    return get_validation_error(username, content)
 
 
-def get_checked_usernames(files: list[DiffEntry]) -> list[str]:
-    return unique(
-        username
-        for file in files
-        if file.status != "removed" and (username := get_username(file.filename))
-    )
-
-
-def get_username(path: str) -> str | None:
-    path = PurePosixPath(path)
-    if path.parent == PROFILES_DIR:
-        return path.stem
+def get_validation_error(username: str, content: str) -> str | None:
+    try:
+        ProfileConfig.create(username.lower(), yaml.safe_load(content))
+    except (yaml.YAMLError, ValueError, TypeError) as e:
+        return str(e)
     return None
 
 
-def unique(usernames) -> list[str]:
-    return list(dict.fromkeys(usernames))
+def get_touched_profiles(files: list[DiffEntry]) -> dict[str, str]:
+    paths = [file.filename for file in files] + [
+        file.previous_filename for file in files if file.previous_filename
+    ]
+    return {
+        username: path for path in paths if (username := get_username_from_path(path))
+    }
+
+
+def get_checked_profiles(files: list[DiffEntry]) -> dict[str, str]:
+    return {
+        username: file.filename
+        for file in files
+        if file.status != "removed"
+        and (username := get_username_from_path(file.filename))
+    }
+
+
+def get_wrong_paths(files: list[DiffEntry]) -> list[str]:
+    return [
+        file.filename
+        for file in files
+        if file.status != "removed"
+        and is_in_profiles_dir(file.filename)
+        and not get_username_from_path(file.filename)
+    ]
+
+
+def touches_only_profiles(files: list[DiffEntry]) -> bool:
+    return all(
+        is_in_profiles_dir(path)
+        for file in files
+        for path in [file.filename, file.previous_filename]
+        if path
+    )
+
+
+def is_in_profiles_dir(path: str) -> bool:
+    return PurePosixPath(path).parent == PROFILES_DIR
+
+
+def get_username_from_path(path: str) -> str | None:
+    path = PurePosixPath(path)
+    if (
+        path.parent == PROFILES_DIR
+        and path.suffix == PROFILE_SUFFIX
+        and USERNAME_RE.match(path.stem)
+    ):
+        return path.stem
+    return None
 
 
 def format_profile_links(usernames: list[str]) -> str:
@@ -135,6 +228,14 @@ def format_profile_links(usernames: list[str]) -> str:
         f"[github.com/{username}](https://github.com/{username})"
         for username in usernames
     )
+
+
+def format_paths(paths: list[str]) -> str:
+    return ", ".join(f"`{path.replace('`', '')}`" for path in paths)
+
+
+def format_profile_path(author: str | None) -> str:
+    return f"`{PROFILES_DIR / (author or 'tvoje-uzivatelske-jmeno')}{PROFILE_SUFFIX}`"
 
 
 def get_not_allowed_comment_text(
@@ -148,7 +249,7 @@ def get_not_allowed_comment_text(
     if author:
         text += (
             "Soubor se musí jmenovat podle tvého uživatelského jména na GitHubu, "
-            f"tedy `profiles/{author}.yml`. "
+            f"tedy {format_profile_path(author)}. "
         )
     text += (
         "Proto PR zavírám. Pokud jde o omyl, pošli prosím nový PR se správným souborem."
@@ -225,10 +326,29 @@ def format_summary_section(summary: Summary) -> str:
     return text
 
 
-def format_missing_profile_section(username: str) -> str:
+def format_invalid_profile_section(username: str, path: str, error: str) -> str:
     return (
         f"### @{username}\n\n"
-        f"Profil [github.com/{username}](https://github.com/{username}) "
-        "podle všeho neexistuje 🤷 "
-        "Soubor se musí jmenovat přesně podle tvého uživatelského jména na GitHubu."
+        f"V souboru `{path}` je chyba, takže by se profil nezobrazil 🤕\n"
+        f"```\n{error}\n```\n"
+        "Jak má soubor vypadat, zjistíš z ostatních profilů "
+        "a ze souborů `models.py` a `enums.py`. "
+        "Až chybu opravíš, mrknu i na tvůj GitHub profil."
+    )
+
+
+def format_wrong_paths_section(author: str | None, paths: list[str]) -> str:
+    return (
+        "### Špatný název souboru\n\n"
+        f"Tyhle soubory mají špatný název: {format_paths(paths)} 🤷 "
+        "Profil musí být v souboru pojmenovaném přesně podle tvého "
+        f"uživatelského jména na GitHubu a s příponou `{PROFILE_SUFFIX}`, "
+        f"tedy {format_profile_path(author)}. "
+        "Přejmenuj ho prosím, jinak se profil nezobrazí."
+    )
+
+
+def get_nothing_to_check_section() -> str:
+    return (
+        "Tenhle PR už nepřidává ani nemění žádný profil, takže tu není co kontrolovat."
     )

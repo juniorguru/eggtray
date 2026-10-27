@@ -15,7 +15,7 @@ from githubkit import BaseAuthStrategy
 from jg.hen.core import check_profile_url
 from jg.hen.models import Summary
 
-from jg.eggtray.checks import check_profile
+from jg.eggtray.checks import PRIVILEGED_USERNAMES, check_profile
 from jg.eggtray.github_app import github_auth
 from jg.eggtray.models import Listing, Profile, ProfileConfig
 from jg.eggtray.pr_checks import check_pull_request
@@ -265,13 +265,14 @@ def check(
 )
 def check_pr(
     obj: ContextObj,
-    pr_number: int,
+    pr_number: int | None,
     owner_repo: str,
     github_auth: BaseAuthStrategy,
     github_event_path: Path | None = None,
     github_run_id: int | None = None,
 ):
     logger.info(f"Event payload path: {github_event_path}")
+    skip_ownership_check = False
     if pr_number is None:
         if github_event_path is None:
             logger.error("Pull request number or event payload path is required")
@@ -279,13 +280,26 @@ def check_pr(
         payload = json.loads(github_event_path.read_text())
         logger.info(f"Event action: {payload['action']}")
         pr_number = payload["pull_request"]["number"]
+        sender = payload["sender"]["login"]
+        logger.info(f"Event sender: @{sender}")
+        # A privileged user reopening a closed PR means they want to accept it
+        skip_ownership_check = (
+            payload["action"] == "reopened" and sender.lower() in PRIVILEGED_USERNAMES
+        )
     logger.info(f"Processing pull request #{pr_number}")
     owner, repo = owner_repo.split("/")
     logger.debug(f"GitHub repository: {owner}/{repo}")
     if run_url := get_run_url(owner, repo, github_run_id):
         logger.info(f"Working inside {run_url}")
     obj.run_async(
-        check_pull_request(github_auth, owner, repo, pr_number, run_url=run_url)
+        check_pull_request(
+            github_auth,
+            owner,
+            repo,
+            pr_number,
+            skip_ownership_check=skip_ownership_check,
+            run_url=run_url,
+        )
     )
 
 
