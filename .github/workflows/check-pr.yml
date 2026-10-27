@@ -1,0 +1,36 @@
+name: check-pr
+
+on:
+  # Runs with secrets even for PRs from forks. Never check out or run the PR's
+  # code here! Profiles are only read through the GitHub API.
+  pull_request_target:
+    types: [opened, reopened, synchronize]
+    paths:
+      - "profiles/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7  # base branch, trusted code
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Install Python dependencies
+        run: uv sync
+
+      - name: Check
+        run: uv run eggtray check-pr
+        env:
+          GITHUB_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
+          GITHUB_INSTALLATION_ID: ${{ secrets.GH_INSTALLATION_ID }}
+          GITHUB_PRIVATE_KEY: ${{ secrets.GH_PRIVATE_KEY }}
