@@ -19,6 +19,9 @@ from jg.eggtray.models import is_ready
 logger = logging.getLogger(__name__)
 
 
+PRIVILEGED_USERNAMES = {"honzajavorek", "roboticke-kure[bot]"}
+
+
 COLORS = {
     Status.ERROR: "🔴",
     Status.WARNING: "🟠",
@@ -61,6 +64,19 @@ async def check_profile(
             logger.warning(
                 f"Issue #{issue_number} doesn't mention a username and has no author"
             )
+            return
+
+        author = issue.user.login if issue.user else None
+        if not is_allowed(author, username):
+            logger.error(f"@{author} isn't allowed to check profile of @{username}")
+            await post_comment(
+                github,
+                owner,
+                repo,
+                issue_number,
+                get_not_allowed_comment_text(username, run_url=run_url),
+            )
+            await close_issue(github, owner, repo, issue_number)
             return
 
         profile_url = f"https://github.com/{username}"
@@ -108,6 +124,13 @@ async def profile_exists(github: GitHub, username: str) -> bool:
         raise
 
 
+def is_allowed(author: str | None, username: str) -> bool:
+    if not author:
+        return False
+    author = author.lower()
+    return author in PRIVILEGED_USERNAMES or author == username.lower()
+
+
 def get_wait_comment_text(username: str, run_url: str | None = None) -> str:
     text = (
         "Ahoj!"
@@ -135,6 +158,19 @@ def get_missing_profile_comment_text(username: str, run_url: str | None = None) 
         "Ahoj! "
         f"Vypadá to, že chceš, ať se podívám na profil [github.com/{username}](https://github.com/{username}), "
         "jenže ten podle všeho neexistuje 🤷"
+    )
+    if run_url:
+        text += f"\n\n---\n\n[Záznam mojí práce]({run_url})"
+    return text
+
+
+def get_not_allowed_comment_text(username: str, run_url: str | None = None) -> str:
+    text = (
+        "Ahoj! "
+        f"Vypadá to, že chceš, ať se podívám na profil [github.com/{username}](https://github.com/{username}), "
+        "jenže zpětnou vazbu dávám jen na vlastní profil 🙅 "
+        "Pokud chceš zkontrolovat ten svůj, založ nové issue a buď v něm uveď svoje uživatelské jméno, "
+        "nebo tam žádné nepiš."
     )
     if run_url:
         text += f"\n\n---\n\n[Záznam mojí práce]({run_url})"
