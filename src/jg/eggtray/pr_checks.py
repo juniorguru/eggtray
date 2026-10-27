@@ -91,14 +91,14 @@ async def check_pull_request(
                 )
                 await close_pull_request(github, owner, repo, pr_number)
                 return
-            logger.warning(
-                f"Accounts don't exist, probably typos: {', '.join(foreign_usernames)}"
-            )
-            wrong_paths += [
+            logger.warning(f"Accounts don't exist: {', '.join(foreign_usernames)}")
+            if typo_paths := [
                 path
                 for username, path in present_profiles.items()
                 if username in foreign_usernames
-            ]
+            ]:
+                logger.warning(f"Probably typos: {', '.join(typo_paths)}")
+                wrong_paths += typo_paths
 
         checked_profiles = {
             username: path
