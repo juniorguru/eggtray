@@ -2,23 +2,21 @@ import logging
 import re
 from pathlib import PurePosixPath
 
-import yaml
 from githubkit import BaseAuthStrategy, GitHub
-from githubkit.versions.latest.models import DiffEntry, PullRequest
+from githubkit.versions.latest.models import DiffEntry
 from jg.hen.core import check_profile_url
 from jg.hen.models import Summary
 
 from jg.eggtray.checks import BOT_USERNAME, is_allowed, profile_exists, render_table
 from jg.eggtray.issues import (
     close_pull_request,
-    fetch_file_content,
     fetch_pull_request,
     fetch_pull_request_files,
     find_comment,
     post_comment,
     update_comment,
 )
-from jg.eggtray.models import ProfileConfig, is_ready
+from jg.eggtray.models import is_ready
 
 
 logger = logging.getLogger(__name__)
@@ -126,18 +124,7 @@ async def check_pull_request(
                 comment_id = await post_comment(
                     github, owner, repo, pr_number, wait_text
                 )
-            validate = touches_only_profiles(files)
-            if not validate:
-                logger.warning("The PR changes more than profiles, skipping validation")
-            for username, path in checked_profiles.items():
-                if validate and (
-                    error := await validate_profile(github, pr, username, path)
-                ):
-                    logger.error(f"Profile {path} is invalid: {error}")
-                    sections.append(
-                        format_invalid_profile_section(username, path, error)
-                    )
-                    continue
+            for username in checked_profiles:
                 profile_url = f"https://github.com/{username}"
                 logger.info(f"Checking profile {profile_url}")
                 summary: Summary = await check_profile_url(profile_url, github=github)
@@ -150,25 +137,6 @@ async def check_pull_request(
             await update_comment(github, owner, repo, comment_id, body)
         else:
             await post_comment(github, owner, repo, pr_number, body)
-
-
-async def validate_profile(
-    github: GitHub, pr: PullRequest, username: str, path: str
-) -> str | None:
-    if head_repo := pr.head.repo:
-        owner, repo = head_repo.owner.login, head_repo.name
-    else:
-        owner, repo = pr.base.repo.owner.login, pr.base.repo.name
-    content = await fetch_file_content(github, owner, repo, path, pr.head.sha)
-    return get_validation_error(username, content)
-
-
-def get_validation_error(username: str, content: str) -> str | None:
-    try:
-        ProfileConfig.create(username.lower(), yaml.safe_load(content))
-    except (yaml.YAMLError, ValueError, TypeError) as e:
-        return str(e)
-    return None
 
 
 def get_touched_profiles(files: list[DiffEntry]) -> dict[str, str]:
@@ -197,15 +165,6 @@ def get_wrong_paths(files: list[DiffEntry]) -> list[str]:
         and is_in_profiles_dir(file.filename)
         and not get_username_from_path(file.filename)
     ]
-
-
-def touches_only_profiles(files: list[DiffEntry]) -> bool:
-    return all(
-        is_in_profiles_dir(path)
-        for file in files
-        for path in [file.filename, file.previous_filename]
-        if path
-    )
 
 
 def is_in_profiles_dir(path: str) -> bool:
@@ -305,15 +264,16 @@ def format_summary_section(summary: Summary) -> str:
         if is_ready(summary.outcomes):
             text += (
                 "Nevidím žádné zásadní nedostatky! 💪 "
-                "Po začlenění tohoto PR se profil do 24 hodin objeví na "
-                "[junior.guru/candidates](https://junior.guru/candidates/).\n\n"
+                "Kvůli GitHubu tedy profil na "
+                "[junior.guru/candidates](https://junior.guru/candidates/) "
+                "nebude upozaděný.\n\n"
             )
         else:
             text += (
                 "Vidím zásadní nedostatky 🔴 "
-                "Po začlenění tohoto PR se profil objeví na "
-                "[junior.guru/candidates](https://junior.guru/candidates/), "
-                "ale dokud nebudou 🔴 červené věci opravené, bude upozaděný 💔 "
+                "Dokud nebudou 🔴 červené věci opravené, bude profil na "
+                "[junior.guru/candidates](https://junior.guru/candidates/) "
+                "upozaděný 💔 "
                 "Každý den to znova zkontroluju.\n\n"
             )
         text += render_table(summary.outcomes)
@@ -324,17 +284,6 @@ def format_summary_section(summary: Summary) -> str:
         "</details>"
     )
     return text
-
-
-def format_invalid_profile_section(username: str, path: str, error: str) -> str:
-    return (
-        f"### @{username}\n\n"
-        f"V souboru `{path}` je chyba, takže by se profil nezobrazil 🤕\n"
-        f"```\n{error}\n```\n"
-        "Jak má soubor vypadat, zjistíš z ostatních profilů "
-        "a ze souborů `models.py` a `enums.py`. "
-        "Až chybu opravíš, mrknu i na tvůj GitHub profil."
-    )
 
 
 def format_wrong_paths_section(author: str | None, paths: list[str]) -> str:

@@ -185,20 +185,6 @@ async def find_comment(
     return None
 
 
-async def fetch_file_content(
-    github: GitHub, owner: str, repo: str, path: str, ref: str
-) -> str:
-    logger.debug(f"Fetching {path} at {ref} from {owner}/{repo}")
-    response = await github.rest.repos.async_get_content(
-        owner=owner,
-        repo=repo,
-        path=path,
-        ref=ref,
-        headers={"Accept": "application/vnd.github.raw+json"},
-    )
-    return response.text
-
-
 async def update_comment(
     github: GitHub, owner: str, repo: str, comment_id: int, text: str
 ) -> None:

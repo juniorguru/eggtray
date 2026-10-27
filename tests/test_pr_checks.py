@@ -17,19 +17,9 @@ from jg.eggtray.pr_checks import (
     get_not_allowed_comment_text,
     get_touched_profiles,
     get_username_from_path,
-    get_validation_error,
     get_wait_comment_text,
     get_wrong_paths,
-    touches_only_profiles,
 )
-
-
-VALID_PROFILE = """
-languages: [cs]
-skills: [python]
-secondary_school: non_it
-university: null
-"""
 
 
 def create_diff_entry(
@@ -127,45 +117,6 @@ def test_get_wrong_paths():
     ]
 
 
-@pytest.mark.parametrize(
-    "files, expected",
-    [
-        ([create_diff_entry("profiles/alice.yml")], True),
-        (
-            [
-                create_diff_entry("profiles/alice.yml"),
-                create_diff_entry("src/jg/eggtray/enums.py", "modified"),
-            ],
-            False,
-        ),
-        (
-            [create_diff_entry("profiles/alice.yml", "renamed", "alice.yml")],
-            False,
-        ),
-    ],
-)
-def test_touches_only_profiles(files: list[DiffEntry], expected: bool):
-    assert touches_only_profiles(files) is expected
-
-
-def test_get_validation_error_valid():
-    assert get_validation_error("Alice", VALID_PROFILE) is None
-
-
-@pytest.mark.parametrize(
-    "content",
-    [
-        "skills: [python",
-        "",
-        "- just a list",
-        VALID_PROFILE + "linkdin: https://example.com\n",
-        VALID_PROFILE.replace("python", "pyton"),
-    ],
-)
-def test_get_validation_error_invalid(content: str):
-    assert get_validation_error("alice", content)
-
-
 def test_get_not_allowed_comment_text():
     text = get_not_allowed_comment_text("alice", ["bob"])
 
@@ -239,19 +190,12 @@ class FakeAPI:
         files: list[DiffEntry],
         existing_usernames: set[str] | None = None,
         comment_id: int | None = None,
-        content: str = VALID_PROFILE,
     ):
         self.calls: list[tuple[str, Any]] = []
         self.existing_usernames = existing_usernames or set()
         self.pr = SimpleNamespace(
             state="open",
             user=SimpleNamespace(login=author),
-            head=SimpleNamespace(repo=None, sha="abc123"),
-            base=SimpleNamespace(
-                repo=SimpleNamespace(
-                    owner=SimpleNamespace(login="juniorguru"), name="eggtray"
-                )
-            ),
         )
 
         async def fetch_pull_request(*args: Any):
@@ -276,10 +220,6 @@ class FakeAPI:
         async def profile_exists(github, username):
             return username in self.existing_usernames
 
-        async def fetch_file_content(github, owner, repo, path, ref):
-            self.calls.append(("fetch_file_content", path, ref))
-            return content
-
         async def check_profile_url(profile_url, **kwargs):
             self.calls.append(("check_profile_url", profile_url))
             return Summary(username=profile_url.split("/")[-1], outcomes=[])
@@ -293,7 +233,6 @@ class FakeAPI:
             update_comment,
             close_pull_request,
             profile_exists,
-            fetch_file_content,
             check_profile_url,
         ]:
             monkeypatch.setattr(pr_checks, fn.__name__, fn)
@@ -314,7 +253,6 @@ def test_check_pull_request_own_profile(monkeypatch: pytest.MonkeyPatch):
 
     assert api.names() == [
         "post_comment",
-        "fetch_file_content",
         "check_profile_url",
         "update_comment",
     ]
@@ -390,37 +328,6 @@ def test_check_pull_request_privileged_doesnt_check_others(
     api.run()
 
     assert api.names() == []
-
-
-def test_check_pull_request_invalid_profile(monkeypatch: pytest.MonkeyPatch):
-    api = FakeAPI(
-        monkeypatch,
-        "alice",
-        [create_diff_entry("profiles/alice.yml")],
-        content="skills: [pyton]",
-    )
-    api.run()
-
-    assert "check_profile_url" not in api.names()
-    assert "V souboru `profiles/alice.yml` je chyba" in api.calls[-1][2]
-
-
-def test_check_pull_request_skips_validation_when_schema_changes(
-    monkeypatch: pytest.MonkeyPatch,
-):
-    api = FakeAPI(
-        monkeypatch,
-        "alice",
-        [
-            create_diff_entry("profiles/alice.yml"),
-            create_diff_entry("src/jg/eggtray/enums.py", "modified"),
-        ],
-        content="skills: [brand_new_skill]",
-    )
-    api.run()
-
-    assert "fetch_file_content" not in api.names()
-    assert "check_profile_url" in api.names()
 
 
 def test_check_pull_request_stale_comment(monkeypatch: pytest.MonkeyPatch):
