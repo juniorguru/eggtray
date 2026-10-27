@@ -18,6 +18,7 @@ from jg.hen.models import Summary
 from jg.eggtray.checks import check_profile
 from jg.eggtray.github_app import github_auth
 from jg.eggtray.models import Listing, Profile, ProfileConfig
+from jg.eggtray.pr_checks import check_pull_request
 from jg.eggtray.project_images import download_project_images
 from jg.eggtray.reports import report_profiles
 
@@ -239,6 +240,52 @@ def check(
             states=states,
             run_url=run_url,
         )
+    )
+
+
+@main.command()
+@click.pass_obj
+@click.argument("pr_number", type=int, required=False)
+@click.option(
+    "--repo", "owner_repo", default="juniorguru/eggtray", help="GitHub repository."
+)
+@github_auth
+@click.option(
+    "--github-event",
+    "github_event_path",
+    envvar="GITHUB_EVENT_PATH",
+    type=click.Path(exists=True, dir_okay=False, file_okay=True, path_type=Path),
+    help="Location of GitHub's event payload. Relevant only inside GitHub Actions run.",
+)
+@click.option(
+    "--github-run-id",
+    envvar="GITHUB_RUN_ID",
+    type=int,
+    help="GitHub run ID. Relevant only inside GitHub Actions run.",
+)
+def check_pr(
+    obj: ContextObj,
+    pr_number: int,
+    owner_repo: str,
+    github_auth: BaseAuthStrategy,
+    github_event_path: Path | None = None,
+    github_run_id: int | None = None,
+):
+    logger.info(f"Event payload path: {github_event_path}")
+    if pr_number is None:
+        if github_event_path is None:
+            logger.error("Pull request number or event payload path is required")
+            raise click.Abort()
+        payload = json.loads(github_event_path.read_text())
+        logger.info(f"Event action: {payload['action']}")
+        pr_number = payload["pull_request"]["number"]
+    logger.info(f"Processing pull request #{pr_number}")
+    owner, repo = owner_repo.split("/")
+    logger.debug(f"GitHub repository: {owner}/{repo}")
+    if run_url := get_run_url(owner, repo, github_run_id):
+        logger.info(f"Working inside {run_url}")
+    obj.run_async(
+        check_pull_request(github_auth, owner, repo, pr_number, run_url=run_url)
     )
 
 

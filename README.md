@@ -11,6 +11,8 @@ If you're looking for an entry level software engineering job, send a Pull Reque
 - If your skills are missing in the `Skill` enum, feel free to add them
 - Members of the [junior.guru club](https://junior.guru/club/) can use `/discord_id` on Discord to learn what's their Discord ID
 
+Once you send the PR, a bot reviews your GitHub profile and comments the results right under the PR. You can only add, change, or remove your own profile. PRs touching profiles of other people get closed automatically.
+
 Once the PR gets accepted, Eggtray uses [Hen](https://github.com/juniorguru/hen) to inspect your GitHub profile. It merges the findings with data from the YAML file and creates a single data structure, which is then available in the API as your profile information.
 
 If you want to change something in the YAML, send another PR. If you found a job (congratulations!) and now want to remove yourself from the API, send a PR removing your YAML file.

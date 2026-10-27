@@ -4,8 +4,11 @@ from typing import cast
 
 from githubkit import GitHub
 from githubkit.versions.latest.models import (
+    DiffEntry,
     Issue,
+    IssueComment,
     IssuePropLabelsItemsOneof1 as IssueLabel,
+    PullRequest,
 )
 
 
@@ -118,4 +121,68 @@ async def close_issue(github: GitHub, owner: str, repo: str, issue_number: int) 
     logger.debug(f"Closing issue #{issue_number}")
     await github.rest.issues.async_update(
         owner=owner, repo=repo, issue_number=issue_number, state="closed"
+    )
+
+
+async def fetch_pull_request(
+    github: GitHub, owner: str, repo: str, pr_number: int
+) -> PullRequest:
+    logger.debug(f"Fetching pull request #{pr_number}")
+    response = await github.rest.pulls.async_get(
+        owner=owner, repo=repo, pull_number=pr_number
+    )
+    return response.parsed_data
+
+
+async def fetch_pull_request_files(
+    github: GitHub, owner: str, repo: str, pr_number: int
+) -> list[DiffEntry]:
+    logger.debug(f"Fetching files of pull request #{pr_number}")
+    return [
+        diff_entry
+        async for diff_entry in github.paginate(
+            github.rest.pulls.async_list_files,
+            owner=owner,
+            repo=repo,
+            pull_number=pr_number,
+            per_page=100,
+        )
+    ]
+
+
+async def close_pull_request(
+    github: GitHub, owner: str, repo: str, pr_number: int
+) -> None:
+    logger.debug(f"Closing pull request #{pr_number}")
+    await github.rest.pulls.async_update(
+        owner=owner, repo=repo, pull_number=pr_number, state="closed"
+    )
+
+
+async def find_comment(
+    github: GitHub, owner: str, repo: str, issue_number: int, marker: str
+) -> int | None:
+    logger.debug(f"Looking for a bot comment with {marker!r} in #{issue_number}")
+    async for comment in github.paginate(
+        github.rest.issues.async_list_comments,
+        owner=owner,
+        repo=repo,
+        issue_number=issue_number,
+        per_page=100,
+    ):
+        if is_bot_comment(comment) and marker in (comment.body or ""):
+            return comment.id
+    return None
+
+
+def is_bot_comment(comment: IssueComment) -> bool:
+    return bool(comment.user and comment.user.type == "Bot")
+
+
+async def update_comment(
+    github: GitHub, owner: str, repo: str, comment_id: int, text: str
+) -> None:
+    logger.debug(f"Updating comment {comment_id}")
+    await github.rest.issues.async_update_comment(
+        owner=owner, repo=repo, comment_id=comment_id, body=text
     )
