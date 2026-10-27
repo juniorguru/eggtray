@@ -22,7 +22,7 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-24.04  # https://github.com/juniorguru/eggtray/issues/478
     steps:
       - name: Checkout
         uses: actions/checkout@v7
