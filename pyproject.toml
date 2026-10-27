@@ -5,7 +5,7 @@ description = "Entry level candidates API"
 readme = "README.md"
 authors = [{name = "Honza Javorek", email = "honza@junior.guru"}]
 license = {text = "AGPL-3.0-only"}
-requires-python = ">=3.13,<3.14"
+requires-python = ">=3.15,<3.16"
 dependencies = [
     "click>=8.3.2",
     "jg.hen@git+https://github.com/juniorguru/hen.git",
@@ -40,7 +40,7 @@ testpaths = "tests"
 addopts = "--import-mode=importlib --ff --ruff --ruff-format"
 
 [tool.ruff]
-target-version = "py313"
+target-version = "py315"
 
 [tool.ruff.lint]
 extend-select = ["I"]
