@@ -3,7 +3,7 @@ from types import SimpleNamespace
 from typing import Any
 
 import pytest
-from githubkit.versions.latest.models import DiffEntry
+from githubkit_schemas.latest.models import DiffEntry
 from jg.hen.models import Outcome, Status, Summary
 
 from jg.eggtray import pr_checks
