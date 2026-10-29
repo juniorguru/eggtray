@@ -3,7 +3,7 @@ import re
 from typing import cast
 
 from githubkit import GitHub
-from githubkit.versions.latest.models import (
+from githubkit_schemas.latest.models import (
     DiffEntry,
     Issue,
     IssuePropLabelsItemsOneof1 as IssueLabel,

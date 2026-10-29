@@ -1,7 +1,7 @@
 import logging
 
 from githubkit import BaseAuthStrategy, GitHub
-from githubkit.versions.latest.models import Issue
+from githubkit_schemas.latest.models import Issue
 
 from jg.eggtray.checks import render_table
 from jg.eggtray.issues import (

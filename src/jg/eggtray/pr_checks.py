@@ -3,7 +3,7 @@ import re
 from pathlib import PurePosixPath
 
 from githubkit import BaseAuthStrategy, GitHub
-from githubkit.versions.latest.models import DiffEntry
+from githubkit_schemas.latest.models import DiffEntry
 from jg.hen.core import check_profile_url
 from jg.hen.models import Summary
 
