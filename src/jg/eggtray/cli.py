@@ -9,6 +9,7 @@ from typing import Any, Coroutine, Generator, Iterable, TypeVar, cast
 from urllib.parse import urljoin
 
 import click
+import stamina
 import yaml
 from diskcache import Cache
 from githubkit import BaseAuthStrategy
@@ -27,11 +28,6 @@ T = TypeVar("T")
 
 
 logger = logging.getLogger(__name__)
-
-
-FETCH_ATTEMPTS = 3
-
-FETCH_RETRY_WAIT = 10.0
 
 
 @dataclass
@@ -156,18 +152,10 @@ def get_cache_key(configs: Iterable[ProfileConfig]) -> str:
 
 
 async def fetch_summaries(
-    configs: Iterable[ProfileConfig],
-    github_api_key: str | None = None,
-    attempts: int = FETCH_ATTEMPTS,
-    retry_wait: float = FETCH_RETRY_WAIT,
+    configs: Iterable[ProfileConfig], github_api_key: str | None = None
 ) -> list[Summary]:
     tasks = [
-        fetch_summary(
-            config.github_url,
-            github_api_key=github_api_key,
-            attempts=attempts,
-            retry_wait=retry_wait,
-        )
+        fetch_summary(config.github_url, github_api_key=github_api_key)
         for config in configs
     ]
     summaries = []
@@ -178,28 +166,13 @@ async def fetch_summaries(
     return summaries
 
 
-async def fetch_summary(
-    github_url: str,
-    github_api_key: str | None = None,
-    attempts: int = FETCH_ATTEMPTS,
-    retry_wait: float = FETCH_RETRY_WAIT,
-) -> Summary:
-    # GitHub API occasionally fails with 5xx or even spurious 404s,
-    # so instead of failing the whole build, re-check the profile
-    for attempt in range(1, attempts + 1):
-        summary: Summary = await check_profile_url(
-            github_url, raise_on_error=False, github_api_key=github_api_key
-        )
-        if not summary.error:
-            return summary
-        if attempt == attempts:
-            raise summary.error
-        logger.warning(
-            f"Processing {summary.username!r} failed "
-            f"(attempt {attempt}/{attempts}): {summary.error!r}, retrying"
-        )
-        await asyncio.sleep(retry_wait * attempt)
-    raise RuntimeError("unreachable")
+# GitHub API occasionally fails with 5xx or even spurious 404s,
+# so instead of failing the whole build, re-check the profile
+@stamina.retry(on=Exception, attempts=3, timeout=None, wait_initial=10, wait_max=60)
+async def fetch_summary(github_url: str, github_api_key: str | None = None) -> Summary:
+    return await check_profile_url(
+        github_url, raise_on_error=True, github_api_key=github_api_key
+    )
 
 
 def create_profiles(
