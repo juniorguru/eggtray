@@ -9,6 +9,7 @@ from typing import Any, Coroutine, Generator, Iterable, TypeVar, cast
 from urllib.parse import urljoin
 
 import click
+import stamina
 import yaml
 from diskcache import Cache
 from githubkit import BaseAuthStrategy
@@ -153,21 +154,25 @@ def get_cache_key(configs: Iterable[ProfileConfig]) -> str:
 async def fetch_summaries(
     configs: Iterable[ProfileConfig], github_api_key: str | None = None
 ) -> list[Summary]:
-    configs_mapping = {config.username: config for config in configs}
     tasks = [
-        check_profile_url(
-            config.github_url, raise_on_error=True, github_api_key=github_api_key
-        )
-        for config in configs_mapping.values()
+        fetch_summary(config.github_url, github_api_key=github_api_key)
+        for config in configs
     ]
     summaries = []
     for github_checking in asyncio.as_completed(tasks):
         summary: Summary = await github_checking
-        if summary.error:
-            raise summary.error
         logger.info(f"Processing {summary.username!r} done")
         summaries.append(summary)
     return summaries
+
+
+# GitHub API occasionally fails with 5xx or even spurious 404s,
+# so instead of failing the whole build, re-check the profile
+@stamina.retry(on=Exception, attempts=3, timeout=None, wait_initial=10, wait_max=60)
+async def fetch_summary(github_url: str, github_api_key: str | None = None) -> Summary:
+    return await check_profile_url(
+        github_url, raise_on_error=True, github_api_key=github_api_key
+    )
 
 
 def create_profiles(

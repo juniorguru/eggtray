@@ -386,6 +386,7 @@ dependencies = [
     { name = "pydantic" },
     { name = "python-slugify" },
     { name = "pyyaml" },
+    { name = "stamina" },
 ]
 
 [package.dev-dependencies]
@@ -408,6 +409,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.12.5" },
     { name = "python-slugify", specifier = ">=8.0.4" },
     { name = "pyyaml", specifier = ">=6.0.3" },
+    { name = "stamina", specifier = ">=26.1.0" },
 ]
 
 [package.metadata.requires-dev]
