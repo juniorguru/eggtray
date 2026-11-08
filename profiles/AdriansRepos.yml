@@ -4,16 +4,14 @@ email: Ferencik.Adrian@outlook.cz
 location: Ostrava, Czech republic
 remote: true
 looking_for:
-  - Junior C# / .NET Developer
-  - Backend Developer
+  - backend
+  - frontend
+  - fullstack 
 skills:
-  - C#
-  - .NET
-  - LINQ
-  - Clean Architecture
-  - Asynchronous Programming
-  - JSON Serialization
-  - Git
+  - csharp
+  - rust
+  - wpf
+  - git
 secondary_school: non_it
 university: null
 languages:
