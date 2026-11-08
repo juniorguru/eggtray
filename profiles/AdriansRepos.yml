@@ -2,12 +2,9 @@ discord_id: 1124654505808633997
 name: Adrián Ferenčík
 email: Ferencik.Adrian@outlook.cz
 location: Ostrava, Czech republic
-remote: true
-looking_for:
-  - backend
-  - frontend
-  - fullstack 
+looking_for: Entry-level Programing
 skills:
+  - backend
   - csharp
   - rust
   - wpf
@@ -16,6 +13,4 @@ secondary_school: non_it
 university: null
 languages:
  - cs
- - en 
-links:
-  github: https://github.com/AdriansRepos
+ - en
