@@ -2,9 +2,7 @@ import pytest
 from jg.hen.models import Outcome, Status, Summary
 
 from jg.eggtray.checks import format_summary_body, is_allowed
-
-
-CLUB_URL = "https://junior.guru/club/"
+from jg.eggtray.config import CLUB_URL
 
 
 @pytest.mark.parametrize(
