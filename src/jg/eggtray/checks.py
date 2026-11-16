@@ -5,6 +5,7 @@ from githubkit.exception import RequestFailed
 from jg.hen.core import check_profile_url
 from jg.hen.models import Outcome, Status, Summary
 
+from jg.eggtray.config import CLUB_URL
 from jg.eggtray.issues import (
     close_issue,
     fetch_issue,
@@ -205,7 +206,7 @@ def format_summary_body(summary: Summary, run_url: str | None = None) -> str:
         text += render_table(summary.outcomes)
         text += (
             "\n\nChceš, aby se na tvůj GitHub, CV nebo kód podíval i člověk? "
-            "V [klubu junior.guru](https://junior.guru/club/?utm_source=gh-check&utm_medium=github&utm_campaign=jaro) ti dají zpětnou vazbu lidi z oboru. "
+            f"V [klubu junior.guru]({CLUB_URL}) ti dají zpětnou vazbu lidi z oboru. "
             "Prvních 14 dní je zdarma a nemusíš zadávat kartu."
         )
     text += (
