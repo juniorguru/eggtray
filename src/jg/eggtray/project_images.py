@@ -122,7 +122,7 @@ async def try_download(
         content_type = response.headers.get("Content-Type", "")
         logger.debug(f"Downloaded {content_type!r} from {url}")
         return response.content
-    except (httpx2.HTTPError, httpx2.InvalidURL) as e:
+    except Exception as e:  # noqa: BLE001
         logger.debug(f"Error while downloading {url}: {e}")
         return None
 
@@ -148,7 +148,7 @@ async def try_screenshot(
                 f"Suspiciously small image: {len(image_bytes)} bytes"
             )
         return image_bytes
-    except (PlaywrightError, SuspiciousImageError) as e:
+    except Exception as e:  # noqa: BLE001
         logger.debug(f"Error while screenshotting {url}: {e}")
         return None
 
@@ -187,6 +187,6 @@ async def try_save(
             lossless=False,
         )
         return image_path
-    except (OSError, ValueError, Image.DecompressionBombError) as e:
+    except Exception as e:  # noqa: BLE001
         logger.debug(f"Error while saving image for {project_name}: {e}")
         return None
