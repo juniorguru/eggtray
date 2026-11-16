@@ -4,7 +4,9 @@ from jg.hen.models import Outcome, Status, Summary
 from jg.eggtray.checks import format_summary_body, is_allowed
 
 
-CLUB_URL = "https://junior.guru/club/"
+CLUB_URL = (
+    "https://junior.guru/club/?utm_source=gh-check&utm_medium=github&utm_campaign=jaro"
+)
 
 
 @pytest.mark.parametrize(
