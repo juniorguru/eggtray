@@ -1,11 +1,12 @@
 import asyncio
 import json
 import logging
+from collections.abc import Coroutine, Generator, Iterable
 from dataclasses import dataclass
 from operator import attrgetter
 from pathlib import Path
 from pprint import pformat
-from typing import Any, Coroutine, Generator, Iterable, TypeVar, cast
+from typing import Any, TypeVar, cast
 from urllib.parse import urljoin
 
 import click
@@ -177,7 +178,7 @@ async def fetch_summary(github_url: str, github_api_key: str | None = None) -> S
 
 def create_profiles(
     configs: Iterable[ProfileConfig], summaries: Iterable[Summary]
-) -> Generator[Profile, None, None]:
+) -> Generator[Profile]:
     for config, github in zip(
         sorted(configs, key=attrgetter("username")),
         sorted(summaries, key=attrgetter("username")),
