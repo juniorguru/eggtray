@@ -1,11 +1,11 @@
 import asyncio
 import hashlib
 import logging
+from collections.abc import AsyncGenerator, Generator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
-from typing import AsyncGenerator, Generator
 
 import httpx2
 from PIL import Image
@@ -28,6 +28,10 @@ _downloads_limit = asyncio.Semaphore(5)
 _screenshots_limit = asyncio.Semaphore(2)
 
 
+class SuspiciousImageError(Exception):
+    pass
+
+
 @dataclass
 class ImageRequest:
     project_name: str
@@ -36,7 +40,7 @@ class ImageRequest:
 
 
 @asynccontextmanager
-async def start_browser() -> AsyncGenerator[Browser | None, None]:
+async def start_browser() -> AsyncGenerator[Browser | None]:
     async with async_playwright() as playwright:
         try:
             browser = await playwright.chromium.launch()
@@ -97,7 +101,7 @@ async def download_project_image(
     return None
 
 
-def collect_image_requests(project: ProjectInfo) -> Generator[ImageRequest, None, None]:
+def collect_image_requests(project: ProjectInfo) -> Generator[ImageRequest]:
     for image_url in project.readme_image_urls:
         yield ImageRequest(project_name=project.name, url=image_url)
     if demo_url := project.demo_url:
@@ -118,7 +122,7 @@ async def try_download(
         content_type = response.headers.get("Content-Type", "")
         logger.debug(f"Downloaded {content_type!r} from {url}")
         return response.content
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.debug(f"Error while downloading {url}: {e}")
         return None
 
@@ -140,9 +144,11 @@ async def try_screenshot(
             finally:
                 await page.close()
         if len(image_bytes) < min_bytes:
-            raise Exception(f"Suspiciously small image: {len(image_bytes)} bytes")
+            raise SuspiciousImageError(
+                f"Suspiciously small image: {len(image_bytes)} bytes"
+            )
         return image_bytes
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.debug(f"Error while screenshotting {url}: {e}")
         return None
 
@@ -181,6 +187,6 @@ async def try_save(
             lossless=False,
         )
         return image_path
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.debug(f"Error while saving image for {project_name}: {e}")
         return None
