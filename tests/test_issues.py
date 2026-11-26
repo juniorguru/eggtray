@@ -8,15 +8,15 @@ from jg.eggtray.issues import get_placement, get_username
     "body, expected",
     [
         (
-            "Kuřátko, mrkni prosím na @alice, díky!\n\n<!-- placement: jobs -->",
+            "Kuřátko, mrkni prosím na @alice, díky!\n\n<!-- src: jobs -->",
             Placement.jobs,
         ),
-        ("<!-- placement: homepage -->", Placement.homepage),
-        ("<!--placement:handbook-->", Placement.handbook),
-        ("<!--  Placement:  JOBS  -->", Placement.jobs),
-        ("<!-- placement: moon -->", None),
-        ("<!-- placement: -->", None),
-        ("placement: jobs", None),
+        ("<!-- src: homepage -->", Placement.homepage),
+        ("<!--src:handbook-->", Placement.handbook),
+        ("<!--  Src:  JOBS  -->", Placement.jobs),
+        ("<!-- src: moon -->", None),
+        ("<!-- src: -->", None),
+        ("src: jobs", None),
         ("Kuřátko, mrkni prosím na můj profil, díky!", None),
         ("", None),
     ],
@@ -26,6 +26,6 @@ def test_get_placement(body: str, expected: Placement | None):
 
 
 def test_get_username_ignores_placement_marker():
-    body = "<!-- placement: jobs -->\nKuřátko, mrkni prosím na @alice, díky!"
+    body = "<!-- src: jobs -->\nKuřátko, mrkni prosím na @alice, díky!"
 
     assert get_username(body) == "alice"

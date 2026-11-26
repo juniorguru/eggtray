@@ -15,7 +15,7 @@ from jg.eggtray.enums import Placement
 
 USERNAME_RE = re.compile(r"@([\w\-]+)")
 
-PLACEMENT_RE = re.compile(r"<!--\s*placement:\s*([\w\-]+)\s*-->", re.IGNORECASE)
+PLACEMENT_RE = re.compile(r"<!--\s*src:\s*([\w\-]+)\s*-->", re.IGNORECASE)
 
 
 logger = logging.getLogger(__name__)
