@@ -7,7 +7,7 @@ from jg.eggtray.checks import (
     get_utm_source,
     is_allowed,
 )
-from jg.eggtray.enums import Placement
+from jg.eggtray.config import Placement
 
 
 @pytest.mark.parametrize(

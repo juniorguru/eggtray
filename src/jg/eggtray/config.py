@@ -1,4 +1,12 @@
-from jg.eggtray.enums import Placement
+from enum import StrEnum, auto
+
+
+class Placement(StrEnum):
+    """Where on junior.guru the check form was"""
+
+    homepage = auto()
+    jobs = auto()
+    handbook = auto()
 
 
 CLUB_URL_TEMPLATE = "https://junior.guru/club/?utm_source={utm_source}&utm_medium=github&utm_campaign=jaro"

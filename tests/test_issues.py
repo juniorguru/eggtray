@@ -1,6 +1,6 @@
 import pytest
 
-from jg.eggtray.enums import Placement
+from jg.eggtray.config import Placement
 from jg.eggtray.issues import get_placement, get_username
 
 

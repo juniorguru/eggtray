@@ -5,8 +5,12 @@ from githubkit.exception import RequestFailed
 from jg.hen.core import check_profile_url
 from jg.hen.models import Outcome, Status, Summary
 
-from jg.eggtray.config import CLUB_URL_TEMPLATE, UNKNOWN_UTM_SOURCE, UTM_SOURCES
-from jg.eggtray.enums import Placement
+from jg.eggtray.config import (
+    CLUB_URL_TEMPLATE,
+    UNKNOWN_UTM_SOURCE,
+    UTM_SOURCES,
+    Placement,
+)
 from jg.eggtray.issues import (
     close_issue,
     fetch_issue,

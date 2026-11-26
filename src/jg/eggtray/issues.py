@@ -10,7 +10,7 @@ from githubkit_schemas.latest.models import (
     PullRequest,
 )
 
-from jg.eggtray.enums import Placement
+from jg.eggtray.config import Placement
 
 
 USERNAME_RE = re.compile(r"@([\w\-]+)")
