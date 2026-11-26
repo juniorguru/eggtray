@@ -1,3 +1,12 @@
-CLUB_URL = (
-    "https://junior.guru/club/?utm_source=gh-check&utm_medium=github&utm_campaign=jaro"
-)
+from jg.eggtray.enums import Placement
+
+
+CLUB_URL_TEMPLATE = "https://junior.guru/club/?utm_source={utm_source}&utm_medium=github&utm_campaign=jaro"
+
+UTM_SOURCES = {
+    Placement.homepage: "gh-check",
+    Placement.jobs: "gh-check-jobs",
+    Placement.handbook: "gh-check-handbook",
+}
+
+UNKNOWN_UTM_SOURCE = "gh-check-unknown"

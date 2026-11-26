@@ -1,8 +1,13 @@
 import pytest
 from jg.hen.models import Outcome, Status, Summary
 
-from jg.eggtray.checks import format_summary_body, is_allowed
-from jg.eggtray.config import CLUB_URL
+from jg.eggtray.checks import (
+    format_summary_body,
+    get_club_url,
+    get_utm_source,
+    is_allowed,
+)
+from jg.eggtray.enums import Placement
 
 
 @pytest.mark.parametrize(
@@ -18,13 +23,56 @@ def test_format_summary_body_invites_to_club(status: Status):
     )
     summary = Summary(username="honzajavorek", outcomes=[outcome])
 
-    assert CLUB_URL in format_summary_body(summary)
+    assert "https://junior.guru/club/?" in format_summary_body(summary)
+
+
+@pytest.mark.parametrize(
+    "placement, expected",
+    [
+        (Placement.homepage, "utm_source=gh-check&"),
+        (Placement.jobs, "utm_source=gh-check-jobs&"),
+        (None, "utm_source=gh-check-unknown&"),
+    ],
+)
+def test_format_summary_body_attributes_club_url(
+    placement: Placement | None, expected: str
+):
+    summary = Summary(username="honzajavorek", outcomes=[])
+
+    assert expected in format_summary_body(summary, placement=placement)
+
+
+@pytest.mark.parametrize(
+    "placement, expected",
+    [
+        (Placement.homepage, "gh-check"),
+        (Placement.jobs, "gh-check-jobs"),
+        (Placement.handbook, "gh-check-handbook"),
+        (None, "gh-check-unknown"),
+    ],
+)
+def test_get_utm_source(placement: Placement | None, expected: str):
+    assert get_utm_source(placement) == expected
+
+
+def test_get_utm_source_covers_all_placements():
+    sources = {get_utm_source(placement) for placement in Placement}
+
+    assert len(sources) == len(Placement)
+    assert "gh-check-unknown" not in sources
+
+
+def test_get_club_url():
+    assert get_club_url(Placement.jobs) == (
+        "https://junior.guru/club/"
+        "?utm_source=gh-check-jobs&utm_medium=github&utm_campaign=jaro"
+    )
 
 
 def test_format_summary_body_error_does_not_invite_to_club():
     summary = Summary(username="honzajavorek", outcomes=[], error=Exception("Boom"))
 
-    assert CLUB_URL not in format_summary_body(summary)
+    assert "https://junior.guru/club/" not in format_summary_body(summary)
 
 
 @pytest.mark.parametrize(
