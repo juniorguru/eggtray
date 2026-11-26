@@ -14,6 +14,7 @@ from jg.eggtray.issues import get_placement, get_username
         ("<!-- src: homepage -->", Placement.homepage),
         ("<!--src:handbook-->", Placement.handbook),
         ("<!--  Src:  JOBS  -->", Placement.jobs),
+        ("<!-- src: jobs --> <!-- src: homepage -->", Placement.jobs),
         ("<!-- src: moon -->", None),
         ("<!-- src: -->", None),
         ("src: jobs", None),

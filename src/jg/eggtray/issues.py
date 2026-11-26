@@ -81,6 +81,7 @@ def get_placement(body: str) -> Placement | None:
         try:
             return Placement(match.group(1).lower())
         except ValueError:
+            logger.warning(f"Unknown placement {match.group(1)!r}")
             return None
     return None
 
