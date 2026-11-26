@@ -3,6 +3,13 @@ from enum import StrEnum, auto, unique
 import pycountry
 
 
+@unique
+class Placement(StrEnum):
+    homepage = auto()
+    jobs = auto()
+    handbook = auto()
+
+
 class Experience(StrEnum):
     volunteering = auto()
     intern = auto()

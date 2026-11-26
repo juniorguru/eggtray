@@ -10,8 +10,12 @@ from githubkit_schemas.latest.models import (
     PullRequest,
 )
 
+from jg.eggtray.enums import Placement
+
 
 USERNAME_RE = re.compile(r"@([\w\-]+)")
+
+PLACEMENT_RE = re.compile(r"<!--\s*placement:\s*([\w\-]+)\s*-->", re.IGNORECASE)
 
 
 logger = logging.getLogger(__name__)
@@ -68,6 +72,16 @@ def has_label(issue: Issue, label_name: str) -> bool:
 def get_username(body: str) -> str | None:
     if match := USERNAME_RE.search(body):
         return match.group(1)
+    return None
+
+
+def get_placement(body: str) -> Placement | None:
+    """Returns where on junior.guru the check form was, if the issue body says so"""
+    if match := PLACEMENT_RE.search(body):
+        try:
+            return Placement(match.group(1).lower())
+        except ValueError:
+            return None
     return None
 
 

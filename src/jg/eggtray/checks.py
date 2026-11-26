@@ -9,6 +9,7 @@ from jg.eggtray.config import CLUB_URL
 from jg.eggtray.issues import (
     close_issue,
     fetch_issue,
+    get_placement,
     get_username,
     has_label,
     post_comment,
@@ -68,6 +69,9 @@ async def check_profile(
                 f"Issue #{issue_number} doesn't mention a username and has no author"
             )
             return
+
+        placement = get_placement(issue.body or "")
+        logger.info(f"Issue #{issue_number} placement: {placement or 'unknown'}")
 
         author = issue.user.login if issue.user else None
         if not is_allowed(author, username):
