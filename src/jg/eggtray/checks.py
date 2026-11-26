@@ -5,10 +5,16 @@ from githubkit.exception import RequestFailed
 from jg.hen.core import check_profile_url
 from jg.hen.models import Outcome, Status, Summary
 
-from jg.eggtray.config import CLUB_URL
+from jg.eggtray.config import (
+    CLUB_URL_TEMPLATE,
+    UNKNOWN_UTM_SOURCE,
+    UTM_SOURCES,
+    Placement,
+)
 from jg.eggtray.issues import (
     close_issue,
     fetch_issue,
+    get_placement,
     get_username,
     has_label,
     post_comment,
@@ -69,6 +75,9 @@ async def check_profile(
             )
             return
 
+        placement = get_placement(issue.body or "")
+        logger.info(f"Issue #{issue_number} placement: {placement or 'unknown'}")
+
         author = issue.user.login if issue.user else None
         if not is_allowed(author, username):
             logger.error(f"@{author} isn't allowed to check profile of @{username}")
@@ -102,7 +111,7 @@ async def check_profile(
                 owner,
                 repo,
                 issue_number,
-                format_summary_body(summary, run_url=run_url),
+                format_summary_body(summary, run_url=run_url, placement=placement),
             )
         else:
             logger.error(f"Profile {profile_url} doesn't exist")
@@ -179,7 +188,21 @@ def get_not_allowed_comment_text(username: str, run_url: str | None = None) -> s
     return text
 
 
-def format_summary_body(summary: Summary, run_url: str | None = None) -> str:
+def get_utm_source(placement: Placement | None) -> str:
+    """Maps the placement of the check form on junior.guru to the club link's UTM source"""
+    return UTM_SOURCES.get(placement, UNKNOWN_UTM_SOURCE)
+
+
+def get_club_url(placement: Placement | None) -> str:
+    """Returns the club link for the check reply, attributed to the form's placement"""
+    return CLUB_URL_TEMPLATE.format(utm_source=get_utm_source(placement))
+
+
+def format_summary_body(
+    summary: Summary,
+    run_url: str | None = None,
+    placement: Placement | None = None,
+) -> str:
     if summary.error:
         data = summary.model_dump(mode="json")
         text = (
@@ -206,7 +229,7 @@ def format_summary_body(summary: Summary, run_url: str | None = None) -> str:
         text += render_table(summary.outcomes)
         text += (
             "\n\nChceš, aby se na tvůj GitHub, CV nebo kód podíval i člověk? "
-            f"V [klubu junior.guru]({CLUB_URL}) ti dají zpětnou vazbu lidi z oboru. "
+            f"V [klubu junior.guru]({get_club_url(placement)}) ti dají zpětnou vazbu lidi z oboru. "
             "Prvních 14 dní je zdarma a nemusíš zadávat kartu."
         )
     text += (
