@@ -5,7 +5,8 @@ from githubkit.exception import RequestFailed
 from jg.hen.core import check_profile_url
 from jg.hen.models import Outcome, Status, Summary
 
-from jg.eggtray.config import CLUB_URL
+from jg.eggtray.config import CLUB_URL_TEMPLATE, DEFAULT_UTM_SOURCE, UTM_SOURCES
+from jg.eggtray.enums import Placement
 from jg.eggtray.issues import (
     close_issue,
     fetch_issue,
@@ -106,7 +107,7 @@ async def check_profile(
                 owner,
                 repo,
                 issue_number,
-                format_summary_body(summary, run_url=run_url),
+                format_summary_body(summary, run_url=run_url, placement=placement),
             )
         else:
             logger.error(f"Profile {profile_url} doesn't exist")
@@ -183,7 +184,22 @@ def get_not_allowed_comment_text(username: str, run_url: str | None = None) -> s
     return text
 
 
-def format_summary_body(summary: Summary, run_url: str | None = None) -> str:
+def get_utm_source(placement: Placement | None) -> str:
+    """Maps the placement of the check form on junior.guru to the club link's UTM source"""
+    if placement is None:
+        return DEFAULT_UTM_SOURCE
+    return UTM_SOURCES.get(placement, DEFAULT_UTM_SOURCE)
+
+
+def get_club_url(placement: Placement | None = None) -> str:
+    return CLUB_URL_TEMPLATE.format(utm_source=get_utm_source(placement))
+
+
+def format_summary_body(
+    summary: Summary,
+    run_url: str | None = None,
+    placement: Placement | None = None,
+) -> str:
     if summary.error:
         data = summary.model_dump(mode="json")
         text = (
@@ -210,7 +226,7 @@ def format_summary_body(summary: Summary, run_url: str | None = None) -> str:
         text += render_table(summary.outcomes)
         text += (
             "\n\nChceš, aby se na tvůj GitHub, CV nebo kód podíval i člověk? "
-            f"V [klubu junior.guru]({CLUB_URL}) ti dají zpětnou vazbu lidi z oboru. "
+            f"V [klubu junior.guru]({get_club_url(placement)}) ti dají zpětnou vazbu lidi z oboru. "
             "Prvních 14 dní je zdarma a nemusíš zadávat kartu."
         )
     text += (
