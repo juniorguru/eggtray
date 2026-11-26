@@ -26,7 +26,8 @@ def test_get_placement(body: str, expected: Placement | None):
     assert get_placement(body) == expected
 
 
-def test_get_username_ignores_placement_marker():
-    body = "<!-- src: jobs -->\nKuřátko, mrkni prosím na @alice, díky!"
+def test_parses_body_from_junior_guru_form():
+    body = "Kuřátko, mrkni prosím na @alice, díky!\n\n<!-- src: handbook -->"
 
     assert get_username(body) == "alice"
+    assert get_placement(body) == Placement.handbook
